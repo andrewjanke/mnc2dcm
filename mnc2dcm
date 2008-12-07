@@ -1,15 +1,21 @@
 #! /usr/bin/env perl
 #
-# Andrew Janke - a.janke@gmail.com
-#
-#
 # A simple MINC to Dicom converter
+#
+# Copyright Andrew Janke - a.janke@gmail.com
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose and without fee is hereby granted,
+# provided that the above copyright notice appear in all copies.  The
+# author makes no representations about the suitability of this software
+# for any purpose.  It is provided "as is" without express or implied warranty.
+
 
 #use strict;
 use warnings "all";
 use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
+use File::Temp qw/ tempdir /;
 use Cwd;
 
 use DICOM;
@@ -30,6 +36,10 @@ $me = &basename($0);
         help => 0,
         );
 
+# Get the history string
+chomp($history = `date`);
+$history .= '>>>> ' . join(' ', $me, @ARGV) . "\n";
+
 # Check arguments
 &GetOptions(
    'help|?' => \$opt{'help'},
@@ -42,41 +52,100 @@ $me = &basename($0);
 # handle -man, -help or missing args
 pod2usage(-verbose => 1) if $opt{help};
 pod2usage(-exitstatus => 0, -verbose => 2) if $opt{man};
-pod2usage(-verbose => 0) && exit if ($#ARGV < 0);
+pod2usage(-verbose => 0) && exit if ($#ARGV != 1);
 
-
+# get arguments
 $infile = $ARGV[0];
-$outfile = $ARGV[1];
+$outdir = $ARGV[1];
 
-##############
+# set up tmpdir
+$opt{tmpdir} = &tempdir( "$me-XXXXXXXX", TMPDIR => 1, CLEANUP => 1 );
 
-my %sequences;
-my $elements = DICOM->new();
-my %seq_dirs = ();
-
-# initialise the dictionary
-foreach my $line (@dicom_fields, @dicom_private) {
+# initialise the dictionary using defaults
+foreach my $line (@dicom_fields) {
    next if ($line =~ /^\#/);
    my ($group, $elem, $code, $numa, $name) = split(/\s+/, $line);
    my @lst = ($code, $name);
    $dict{$group}{$elem} = [@lst];
    }
 
-my $d;
+# check for infile
+if(!-e $infile){
+   die "$me: Couldn't find input file: $infile\n\n";
+   }
 
-$d = DICOM->new();
+# make outdir if it doesn't exist
+if(!-e $outdir){
+   &do_cmd('mkdir', '-p', $outdir);
+   }
 
-# SeriesNumber
-$d->{'0020'}{'0011'} = &create_element('0020', '0011', 123);
+# create out dicom structure
+my $d = DICOM->new();
+
+# SeriesNumber (set to zero which may or may not be a good idea! -- time will tell)
+$d->{'0020'}{'0011'} = &create_element('0020', '0011', 0);
+
+# Series time
+$d->{'0008'}{'0031'} = &create_element('0008', '0031', "1200");
+
+# Sequence name
+$d->{'0018'}{'1030'} = &create_element('0018', '1030', "testy-bob");
 
 # Image Comment
 $d->{'0020'}{'4000'} = &create_element('0020', '4000', "Created by $me ($VERSION)");
 
+
+# reshape the image to zyx
+print STDOUT "+ Reshaping $infile to zyx +dir\n";
+&do_cmd('mincreshape', '-clobber',
+        '-dimorder', 'zspace,yspace,xspace',
+        '+direction',
+        '-dimsize', 'xspace=-1',
+        '-dimsize', 'yspace=-1',
+        '-dimsize', 'zspace=-1',
+        $infile, "$opt{'tmpdir'}/res.mnc");
+
+# Get sizes
+@args = ('mincinfo', '-error_string', 0,
+         '-dimlength', 'xspace', '-dimlength', 'yspace', '-dimlength', 'zspace',
+         "$opt{'tmpdir'}/res.mnc");
+$args = join(' ', @args);
+@data = split(/\n/, `$args`);
+($xsize, $ysize, $zsize) = @data[0..2];
+
+
+# first create the required elements (setting to null and/or 0)
+$d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
+$d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
+
+
+# for each slice
+foreach $s (0..($zsize-1)){
+   
+   $outfile = "$outdir/$s.dcm";
+   
+   print STDOUT "  | Working on slice $s\n";
+   
+   # set the image number
+   $d->setElementValue('0020', '0013', $s);
+   
+   # get and set the slice
+   $data = `mincextract -byte -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
+   $d->{'7FE0'}{'0010'}->{'value'} = "fred";
+   
+   # write the file out
+   $d->write($outfile);
+   }
+
+
+# debug rooting
 #$d->fill("minimal.dcm");
 
 
 print "CONTENTS: \n";
 foreach $c ($d->contents()){
+   
+   print "C: $c\n";
    
    my @arr = @{$c};
    
@@ -88,7 +157,12 @@ foreach $c ($d->contents()){
    }
 
 # write the image out
-$d->write($outfile);
+#$d->write($outfile);
+#$pixels = $d->value('7FE0', '0010');
+#open(FH, ">raw");
+#print FH $pixels;
+#close(FH);
+
 
 
 # create and element, fill in the missing bits 
@@ -115,36 +189,6 @@ sub create_element {
    
    return $n;
    }
-
-
-
-sub sort_dicoms {
-	while (my $dicom = shift @dicoms) {
-		my ($series_number, $image_number, $temporal_position,
-			$seq_name, $series_time) = undef;
-
-		$elements->fill($dicom);
-
-		$series_number = $elements->value('0020', '0011');
-		$image_number = $elements->value('0020', '0013');
-		$temporal_position = $elements->value('0020', '0100');
-		$seq_name = $elements->value('0018', '1030');
-		$series_time = $elements->value('0008', '0031');
-
-		$series_time =~ s/[^0-9.]//g;
-		$series_number =~ s/[^0-9]//g;
-		$image_number =~ s/[^0-9]//g;
-		$temporal_position =~ s/[^0-9]//g;
-
-		print "$dicom is $series_time"."_$series_number"."_$seq_name image #$image_number\n";
-
-		if (defined($series_number) && $series_number > 0) {
-			$sequences{$series_time."_".$series_number}->{$seq_name}->{$temporal_position}->{$image_number} = $dicom;
-		} else {
-			print "ERROR: $series_time"."_$series_number $seq_name slice $image_number\n";
-		}
-	}
-}
 
 
 sub do_cmd { 
@@ -182,14 +226,14 @@ They should howver be easily readable with Dicom viewers such as Osirix,
 Sante Dicom Viewer and ImageJ (three of the viewers on which the output
 of mnc2dcm has been tested).
 
-   $ mnc2dcm
+   $ mnc2dcm <in.mnc> <outdir>
 
 =head1 DESCRIPTION
 
 B<mnc2dcm> is a bit of a hack really though as all it does is call ...
 
  eg:
-    $ mnc2dcm ...
+    $ mnc2dcm <in.mnc> <outdir>
 
 Problems or comments should not be sent to: a.janke@gmail.com he really
 is not all that interested in maintaining things that pertain to DICOM
