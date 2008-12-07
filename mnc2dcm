@@ -113,6 +113,10 @@ $args = join(' ', @args);
 @data = split(/\n/, `$args`);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
+# set columns and rows
+$d->{'0028'}{'0010'} = &create_element('0028', '0010', $xsize);
+$d->{'0028'}{'0011'} = &create_element('0028', '0011', $ysize);
+
 
 # first create the required elements (setting to null and/or 0)
 $d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
@@ -133,35 +137,18 @@ foreach $s (0..($zsize-1)){
    $data = `mincextract -byte -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
    $d->{'7FE0'}{'0010'}->{'value'} = "fred";
    
-   # write the file out
+   # write this slice out
    $d->write($outfile);
    }
-
 
 # debug rooting
 #$d->fill("minimal.dcm");
 
-
 print "CONTENTS: \n";
-foreach $c ($d->contents()){
-   
-   print "C: $c\n";
-   
-   my @arr = @{$c};
-   
-   $gp = $arr[0];
-   $el = $arr[1];
-   
-   print "   [$gp][$el] - " . join(" | ", @arr[2..5]) . "\n" . 
-         "                - $arr[6]\n";
-   }
+$d->printContents();
 
-# write the image out
-#$d->write($outfile);
-#$pixels = $d->value('7FE0', '0010');
-#open(FH, ">raw");
-#print FH $pixels;
-#close(FH);
+
+
 
 
 
