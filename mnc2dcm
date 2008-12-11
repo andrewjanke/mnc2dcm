@@ -79,22 +79,6 @@ if(!-e $outdir){
    &do_cmd('mkdir', '-p', $outdir);
    }
 
-# create out dicom structure
-my $d = DICOM->new();
-
-# SeriesNumber (set to zero which may or may not be a good idea! -- time will tell)
-$d->{'0020'}{'0011'} = &create_element('0020', '0011', 0);
-
-# Series time
-$d->{'0008'}{'0031'} = &create_element('0008', '0031', "1200");
-
-# Sequence name
-$d->{'0018'}{'1030'} = &create_element('0018', '1030', "testy-bob");
-
-# Image Comment
-$d->{'0020'}{'4000'} = &create_element('0020', '4000', "Created by $me ($VERSION)");
-
-
 # reshape the image to zyx
 print STDOUT "+ Reshaping $infile to zyx +dir\n";
 &do_cmd('mincreshape', '-clobber',
@@ -104,6 +88,49 @@ print STDOUT "+ Reshaping $infile to zyx +dir\n";
         '-dimsize', 'yspace=-1',
         '-dimsize', 'zspace=-1',
         $infile, "$opt{'tmpdir'}/res.mnc");
+
+
+# create the dicom mess
+my $d = DICOM->new();
+
+# Dicom things
+# MetaElementGroupLength
+$d->{'0002'}{'0000'} = &create_element('0002', '0000', 130);
+
+# FileMetaInformationVersion
+$d->{'0002'}{'0001'} = &create_element('0002', '0001', '01');
+
+# SpecificCharacterSet
+$d->{'0008'}{'0005'} = &create_element('0008', '0005', 'ISO_IR 100');
+
+
+# Patient Name, ID, BirthDate, Sex
+$d->{'0010'}{'0010'} = &create_element('0010', '0010', "JOHN^DOE");
+$d->{'0010'}{'0020'} = &create_element('0010', '0020', "PatientID");
+$d->{'0010'}{'0030'} = &create_element('0010', '0030', "19990101");
+$d->{'0010'}{'0040'} = &create_element('0010', '0040', "M");
+
+
+# Study, Series, Acquisition, Image Date
+$d->{'0008'}{'0020'} = &create_element('0008', '0020', "20081210");
+$d->{'0008'}{'0021'} = &create_element('0008', '0021', "20081210");
+$d->{'0008'}{'0022'} = &create_element('0008', '0022', "20081210");
+$d->{'0008'}{'0023'} = &create_element('0008', '0023', "20081210");
+
+# Series time
+$d->{'0008'}{'0031'} = &create_element('0008', '0031', "1200");
+
+# Sequence name
+$d->{'0018'}{'1030'} = &create_element('0018', '1030', "fMRI-test");
+
+# Image Comment
+$d->{'0020'}{'4000'} = &create_element('0020', '4000', "Created by $me ($VERSION)");
+
+# StudyID, SeriesNumber, AcquisitionNumber
+$d->{'0020'}{'0010'} = &create_element('0020', '0010', 1);
+$d->{'0020'}{'0011'} = &create_element('0020', '0011', 1);
+$d->{'0020'}{'0012'} = &create_element('0020', '0012', 1);
+
 
 # Get sizes
 @args = ('mincinfo', '-error_string', 0,
@@ -117,25 +144,52 @@ $args = join(' ', @args);
 $d->{'0028'}{'0010'} = &create_element('0028', '0010', $xsize);
 $d->{'0028'}{'0011'} = &create_element('0028', '0011', $ysize);
 
+# set spacing
+$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0");
+
+
+# SamplesPerPixel
+$d->{'0028'}{'0002'} = &create_element('0028', '0002', 1);
+
+# PixelRepresentation
+$d->{'0028'}{'0103'} = &create_element('0028', '0103', 0);
+
+# BitsAllocated, BitsStored, HighBit
+$d->{'0028'}{'0100'} = &create_element('0028', '0100', 16);
+$d->{'0028'}{'0101'} = &create_element('0028', '0101', 16);
+$d->{'0028'}{'0102'} = &create_element('0028', '0102', 15);
+
 
 # first create the required elements (setting to null and/or 0)
 $d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
+#$d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
 $d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
-
 
 # for each slice
 foreach $s (0..($zsize-1)){
    
-   $outfile = "$outdir/$s.dcm";
+   $outfile = "$outdir/$s.dcm"; 
    
    print STDOUT "  | Working on slice $s\n";
    
    # set the image number
-   $d->setElementValue('0020', '0013', $s);
+   $d->setElementValue('0020', '0013', $s, );
+   
+   # ImagePositionPatient
+   $args = "voxeltoworld $opt{'tmpdir'}/res.mnc $s " . 
+           (($ysize-1)/2) .
+           ' ' .
+           (($zsize-1)/2);
+   chomp($buf = `$args`);
+   $buf =~ s/\ /\,\ /g;
+   
+   print "BUF = $buf\n\n";
+#   $d->setElementValue('0020', '0032', $buf);
    
    # get and set the slice
-   $data = `mincextract -byte -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
-   $d->{'7FE0'}{'0010'}->{'value'} = "fred";
+   $data = `mincextract -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
+   $d->{'7FE0'}{'0010'}->{'length'} = 2 * $xsize * $ysize;
+   $d->{'7FE0'}{'0010'}->{'value'} = $data;
    
    # write this slice out
    $d->write($outfile);

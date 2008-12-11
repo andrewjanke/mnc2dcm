@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.1 2008/12/10 02:13:37 rotor Exp $
+# $Id: DICOM.pm,v 1.2 2008/12/11 03:20:38 rotor Exp $
 
 package DICOM;
 
@@ -15,7 +15,7 @@ use DICOM::Element;
 use DICOM::Fields;	# Standard header definitions.
 use DICOM::Private;	# Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.1 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;		# Field to sort by.
@@ -97,13 +97,20 @@ sub fill {
 
 sub write {
   my ($this, $outfile) = @_;
-
+  
+  my $header = "\0" x 128 . "DICM";
+  
   $outfile = $currentfile unless (defined($outfile));
-  # Copy over file preamble.
+  
   open(OUTFILE, ">$outfile") or return 1;
+  
+  # write out the header
+  syswrite(OUTFILE, $header, 0x84);
+
   # Do not forget the DICM!!!!
-  print OUTFILE $preamblebuff."DICM" if ($isdicm);
+  # print OUTFILE $preamblebuff."DICM" if ($isdicm);
   # Ensure base class method called.
+  
   $this->DICOM::printContents(\*OUTFILE);
   close(OUTFILE);
 }

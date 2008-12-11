@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.1 2008/12/10 02:13:37 rotor Exp $
+# $Id: Element.pm,v 1.2 2008/12/11 03:20:38 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group	Group (hex).
@@ -19,7 +19,7 @@ use strict;
 use DICOM::VRfields;
 use vars qw($VERSION %VR);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.1 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 
 #my %VR;			# Value Representations (DICOM Std PS 3.5 Sect 6.2)
 my ($SHORT, $INT) = (2, 4);	# Constants: Byte sizes.
@@ -393,6 +393,9 @@ sub setValue {
 
       last SWITCH;
     }
+    if ($code eq "US") { $this->fix_length(2, $value); last SWITCH; }
+    if ($code eq "UL") { $this->fix_length(4, $value); last SWITCH; }
+    if ($code eq "DA") { $this->fix_length(8, $value); last SWITCH; }
     if ($code eq "IS") { $this->fix_length(12, $value); last SWITCH; }
     if ($code eq "LO") { $this->fix_length(64, $value); last SWITCH; }
     if ($code eq "DT") { $this->fix_length(26, $value); last SWITCH; }
