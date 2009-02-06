@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.2 2008/12/11 03:20:38 rotor Exp $
+# $Id: DICOM.pm,v 1.3 2009/02/06 05:08:25 rotor Exp $
 
 package DICOM;
 
@@ -15,7 +15,7 @@ use DICOM::Element;
 use DICOM::Fields;	# Standard header definitions.
 use DICOM::Private;	# Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;		# Field to sort by.
@@ -126,9 +126,9 @@ sub printContents {
     %gp = %{$hash{$gpref}};
     foreach my $el (sort hexadecimally keys(%gp)) {
       if (defined($OUTFILE)) {
-	$gp{$el}->write($OUTFILE);
+        $gp{$el}->write($OUTFILE);
       } else {
-	$gp{$el}->print();
+        $gp{$el}->print();
       }
     }
   }

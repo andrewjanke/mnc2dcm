@@ -95,7 +95,7 @@ my $d = DICOM->new();
 
 # Dicom things
 # MetaElementGroupLength
-$d->{'0002'}{'0000'} = &create_element('0002', '0000', 130);
+$d->{'0002'}{'0000'} = &create_element('0002', '0000', 111);
 
 # FileMetaInformationVersion
 $d->{'0002'}{'0001'} = &create_element('0002', '0001', '01');
@@ -141,11 +141,11 @@ $args = join(' ', @args);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
 # set columns and rows
-$d->{'0028'}{'0010'} = &create_element('0028', '0010', $xsize);
+$d->{'0028'}{'0010'} = &create_element('0028', '0010', pack("S", $xsize));
 $d->{'0028'}{'0011'} = &create_element('0028', '0011', $ysize);
 
-# set spacing
-$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0");
+# PixelSpacing
+$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0\1.0");
 
 
 # SamplesPerPixel
@@ -162,8 +162,21 @@ $d->{'0028'}{'0102'} = &create_element('0028', '0102', 15);
 
 # first create the required elements (setting to null and/or 0)
 $d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
+
+# ImagePosition
+#$d->{'0020'}{'0030'} = &create_element('0020', '0030', 0);
+
+# ImagePositionPatient
 #$d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
+
+# PixelData
 $d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
+
+
+$size = &calc_size($d);
+
+$d->setElementValue('0002', '0000', $size);
+print STDOUT "Total size: $size\n";
 
 # for each slice
 foreach $s (0..($zsize-1)){
@@ -202,6 +215,27 @@ print "CONTENTS: \n";
 $d->printContents();
 
 
+# count total size of elements
+sub calc_size {
+   my ($d) = @_;
+   my(%hash, $gp, $el, $size);
+   
+   %hash = %$d;
+   
+   $size = 0;
+   foreach $gp (keys(%hash)){
+      foreach $el (keys(%{$hash{$gp}})){
+         $size += $hash{$gp}{$el}->{'length'};
+         print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "\n";
+         }
+      
+      
+      }
+   
+   
+   
+   return $size;
+   }
 
 
 
