@@ -229,10 +229,7 @@ sub calc_size {
          print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "\n";
          }
       
-      
       }
-   
-   
    
    return $size;
    }
@@ -294,10 +291,10 @@ mnc2dcm should work to convert 3D MINC volumes to Dicom "format". By
 Dicom format I mean as much to spec as possible. Mind you this in
 NO WAY means that you will be able to re-import these images into some
 scanner interface as most of these have their own addittions to Dicom
-that are not always that compatible with each other. So yes your images
+that are rarely compatible with each other. So yes your images
 might be importable into such scanner interfaces but also might not.
 
-They should howver be easily readable with Dicom viewers such as Osirix,
+They should however be easily readable with Dicom viewers such as Osirix,
 Sante Dicom Viewer and ImageJ (three of the viewers on which the output
 of mnc2dcm has been tested).
 
@@ -310,10 +307,11 @@ B<mnc2dcm> is a bit of a hack really though as all it does is call ...
  eg:
     $ mnc2dcm <in.mnc> <outdir>
 
-Problems or comments should not be sent to: a.janke@gmail.com he really
-is not all that interested in maintaining things that pertain to DICOM
-as it seems to be a constantly moving target. But hey you can
-still email and you might just get lucky, he might be having a good day.
+Problems or comments should not be sent to: a.janke@gmail.com 
+
+Note that I (Andrew) am really not all that interested in maintaining things 
+that pertain to DICOM as it seems to be a constantly moving target. But hey 
+you can still email and you might just get lucky, I might be having a good day.
 
 =head1 OPTIONS
 

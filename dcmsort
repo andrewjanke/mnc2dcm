@@ -219,31 +219,38 @@ __END__
 
 =head1 NAME
 
-B<mnc2dcm> - simple MINC to Dicom converter
+B<dcmsort> - sort a directory of dicom files
 
 =head1 SYNOPSIS
 
-B<mnc2dcm> [options] in.mnc out_base
+B<dcmsort> [options] infile1.dcm [ infile2.dcm [ indir1 ] ]
 
-mnc2dcm should work to convert 3D MINC volumes to Dicom "format". By
-Dicom format I mean as much to spec as possible. Mind you this in
-NO WAY means that you will be able to re-import these images into some
-scanner interface as most of these have their own addittions to Dicom
-that are not always that compatible with each other. So yes your images
-might be importable into such scanner interfaces but also might not.
+dcmsort will take an input series of dicom files (or directories), 
+find all the dicom files in there and then make an output directory
+structure in the current directory using the paitient ID and sequence
+names as subfolders.
 
-They should howver be easily readable with Dicom viewers such as Osirix,
-Sante Dicom Viewer and ImageJ (three of the viewers on which the output
-of mnc2dcm has been tested).
+   $ dcmsort 2312323/*.dcm 
 
-   $ mnc2dcm <in.mnc> <outdir>
+or
+
+   $ dcmsort 2312323
+   
+Will achieve the same thing. 
+
 
 =head1 DESCRIPTION
 
-B<mnc2dcm> is a bit of a hack really though as all it does is call ...
+B<dcmsort> digs in the headers of each dicom file in the input list and
+builds a database of the series, acquisision and image's. From there it
+will output the individual dicom files into a more sensical structure
+that will allow the easy conversion of just one series. Note that at this
+stage no real sanity checking of the input dicom files is done such as
+checking for missing images and mismatched headers.
 
- eg:
-    $ mnc2dcm <in.mnc> <outdir>
+By default dcmsort will just output a listing of what is in the input
+dicom files, if you want it to really move the files in question use
+the --move option.
 
 Problems or comments should not be sent to: a.janke@gmail.com he really
 is not all that interested in maintaining things that pertain to DICOM
@@ -256,7 +263,7 @@ still email and you might just get lucky, he might be having a good day.
 
 =item B<-v>, B<--verbose>
 
-Be noisy when doing things (most importantly this will echo the resulting script to the terminal)
+Be noisy(er) when doing things
 
 =item B<--version>
 
@@ -274,11 +281,15 @@ Dump a man page
 
 Do a dry run. This is usually only useful if combined with --verbose so that you can see what is going on.
 
+=item B<--move>
+
+Move the input files 
+
 =back
 
 =head1 SEE ALSO
 
-dconvert(1)
+DICOM.pm
 
 =head1 AUTHOR
 
