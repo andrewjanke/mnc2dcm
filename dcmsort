@@ -99,9 +99,22 @@ foreach $infile (@infiles){
    $AcquisitionNumber *= 1;
    $ImageNumber *= 1;
    
-   $db{$StudyID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
+   # print "[$infile:$StudyID] S:$SeriesNumber A:$AcquisitionNumber I:$ImageNumber\n";
    
-  # print "[$infile:$StudyID] S:$SeriesNumber A:$AcquisitionNumber I:$ImageNumber\n";
+   # hunt for a patient name or ID
+   $PatientName = $d->value('0010', '0010');
+   $PatientID = $d->value('0010', '0020');
+   
+   $ID = "$PatientID\_$PatientName-$StudyID";
+   
+   $ID =~ s/\^/\-/g;
+   $ID =~ s/\ //g;
+   $ID = lc($ID);
+   
+   # print "PN: $ID\n";
+   
+   # enter the filename
+   $db{$ID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
    
    # times
    $StudyDate = $d->value('0008', '0020');
@@ -110,19 +123,19 @@ foreach $infile (@infiles){
    $AcquisitionTime = $d->value('0008', '0032');
    $ImageTime = $d->value('0008', '0033');
    
-  # print "[$infile:$StudyID] $StudyDate $SeriesDate $SeriesTime $AcquisitionTime $ImageTime\n";
+  # print "[$infile:$ID] $StudyDate $SeriesDate $SeriesTime $AcquisitionTime $ImageTime\n";
    
-   $StudyDate{$StudyID} = $StudyDate;
-   $SeriesDate{"$StudyID:$SeriesNumber"} = $SeriesDate;
+   $StudyDate{$ID} = $StudyDate;
+   $SeriesDate{"$ID:$SeriesNumber"} = $SeriesDate;
    
-   if(defined($SeriesTime{"$StudyID:$SeriesNumber"}) && 
-      $SeriesTime{"$StudyID:$SeriesNumber"} != $SeriesTime){
+   if(defined($SeriesTime{"$ID:$SeriesNumber"}) && 
+      $SeriesTime{"$ID:$SeriesNumber"} != $SeriesTime){
       print "ERROR! Series Time does not match($infile)";
       #exit(1);
       }
-   $SeriesTime{"$StudyID:$SeriesNumber"} = $SeriesTime;
-   $AcquisitionTime{"$StudyID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
-   $ImageTime{"$StudyID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
+   $SeriesTime{"$ID:$SeriesNumber"} = $SeriesTime;
+   $AcquisitionTime{"$ID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
+   $ImageTime{"$ID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
    
    # Sequence, Protocol Name
    $SequenceName = $d->value('0018', '0024');
@@ -130,9 +143,9 @@ foreach $infile (@infiles){
    $SequenceName =~ s/\ $//g;
    $ProtocolName =~ s/\ $//g;
    
-   $SequenceName{"$StudyID:$SeriesNumber"} = $SequenceName;
-   $ProtocolName{"$StudyID:$SeriesNumber"} = $ProtocolName;
-  # print "[$infile:$StudyID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - $SequenceName - $ProtocolName\n";
+   $SequenceName{"$ID:$SeriesNumber"} = $SequenceName;
+   $ProtocolName{"$ID:$SeriesNumber"} = $ProtocolName;
+  # print "[$infile:$ID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - $SequenceName - $ProtocolName\n";
   
    print '.';
    }
@@ -158,35 +171,35 @@ print "Done\n";
 
 # print out the database
 
-foreach $std (sort {$a <=> $b} (keys(%db))){
+foreach $id (sort {$a <=> $b} (keys(%db))){
 
-   foreach $ser (sort {$a <=> $b} (keys(%{$db{$std}}))){
+   foreach $ser (sort {$a <=> $b} (keys(%{$db{$id}}))){
 
-      print "[$std][" . sprintf("%03d", $ser) . 
-            '][' . $SeriesDate{"$std:$ser"} . 
-            '][' . $SeriesTime{"$std:$ser"} . 
-            '] '. $ProtocolName{"$std:$ser"} . 
+      print "[$id][" . sprintf("%03d", $ser) . 
+            '][' . $SeriesDate{"$id:$ser"} . 
+            '][' . $SeriesTime{"$id:$ser"} . 
+            '] '. $ProtocolName{"$id:$ser"} . 
             ' ';
 
       print "   ";
-      foreach $acq (sort {$a <=> $b} (keys(%{$db{$std}{$ser}}))){
+      foreach $acq (sort {$a <=> $b} (keys(%{$db{$id}{$ser}}))){
 
-         #print "   Acq[" . $AcquisitionTime{"$StudyID:$s:$a"} . "]: $a  (";
+         #print "   Acq[" . $AcquisitionTime{"$ID:$s:$a"} . "]: $a  (";
          print "$acq ";
 
-         @imgs = (sort {$a <=> $b} (keys(%{$db{$std}{$ser}{$acq}})));
+         @imgs = (sort {$a <=> $b} (keys(%{$db{$id}{$ser}{$acq}})));
 
          print '(' . join(' ', @imgs) . ') ' if($#imgs > 0);
          
          if($opt{'move'}){
             foreach $img (@imgs){
                
-               $infile = $db{$std}{$ser}{$acq}{$img};
+               $infile = $db{$id}{$ser}{$acq}{$img};
                
-               $protocol = $ProtocolName{"$std:$ser"};
+               $protocol = $ProtocolName{"$id:$ser"};
                $protocol =~ s/\//\-/g;
                $protocol =~ s/\ /\-/g;
-               $outdir = "$std/" . sprintf("%04d", $ser) . "_$protocol";
+               $outdir = "$id/" . sprintf("%04d", $ser) . "_$protocol";
                $outfile = sprintf("%04d-%04d.dcm", $acq, $img);
                
             #   print "$infile => $outdir/$outfile\n";
