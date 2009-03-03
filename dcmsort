@@ -18,9 +18,9 @@ use Pod::Usage;
 use File::Basename;
 use Cwd;
 
-use DICOM;
-use DICOM::Fields;
-use DICOM::Element;
+use DICOM-all;
+#use DICOM::Fields;
+#use DICOM::Element;
 
 # until I get organised and do this properly
 my $PACKAGE = &basename($0);
@@ -171,7 +171,7 @@ print "Done\n";
 
 # print out the database
 
-foreach $id (sort {$a <=> $b} (keys(%db))){
+foreach $id (sort keys(%db)){
 
    foreach $ser (sort {$a <=> $b} (keys(%{$db{$id}}))){
 
