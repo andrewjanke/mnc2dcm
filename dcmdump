@@ -50,7 +50,7 @@ $history .= '>>>> ' . join(' ', $me, @ARGV) . "\n";
    'f|fake' => \$opt{'fake'},
    'move' => \$opt{'move'},
    ) or pod2usage(-verbose => 1) && exit;
-   
+
 # handle -man, -help or missing args
 pod2usage(-verbose => 1) if $opt{help};
 pod2usage(-exitstatus => 0, -verbose => 2) if $opt{man};
@@ -64,14 +64,14 @@ foreach $f (@ARGV){
       push(@infiles, $f);
       next;
       }
-   
+
    # if a directory
    if(-d $f){
       @buf = split(/\n/, `find $f -type f`);
       push(@infiles, @buf);
       next;
       }
-   
+
    die "This is bad - $f probably doesn't exist\n";
    }
 
@@ -80,42 +80,42 @@ my $d = DICOM->new();
 
 print "Reading $#infiles Images:";
 foreach $infile (@infiles){
-   
+
    # fill the DICOM object
    $d->fill($infile);
 
    #print "CONTENTS ($infile)\n";
-   #$d->printContents();
-   
+   $d->printContents();
+
    # Series, Acquisition, Image IDS
    $StudyID = $d->value('0020', '0010');
    $SeriesNumber = $d->value('0020', '0011');
    $AcquisitionNumber = $d->value('0020', '0012');
    $ImageNumber = $d->value('0020', '0013');
-   
+
    # clean up numbers
    $StudyID =~ s/\ //g;
    $SeriesNumber *= 1;
    $AcquisitionNumber *= 1;
    $ImageNumber *= 1;
-   
+
    $db{$StudyID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
-   
+
   # print "[$infile:$StudyID] S:$SeriesNumber A:$AcquisitionNumber I:$ImageNumber\n";
-   
+
    # times
    $StudyDate = $d->value('0008', '0020');
    $SeriesDate = $d->value('0008', '0021');
    $SeriesTime = $d->value('0008', '0031');
    $AcquisitionTime = $d->value('0008', '0032');
    $ImageTime = $d->value('0008', '0033');
-   
+
   # print "[$infile:$StudyID] $StudyDate $SeriesDate $SeriesTime $AcquisitionTime $ImageTime\n";
-   
+
    $StudyDate{$StudyID} = $StudyDate;
    $SeriesDate{"$StudyID:$SeriesNumber"} = $SeriesDate;
-   
-   if(defined($SeriesTime{"$StudyID:$SeriesNumber"}) && 
+
+   if(defined($SeriesTime{"$StudyID:$SeriesNumber"}) &&
       $SeriesTime{"$StudyID:$SeriesNumber"} != $SeriesTime){
       print "ERROR! Series Time does not match($infile)";
       #exit(1);
@@ -123,17 +123,17 @@ foreach $infile (@infiles){
    $SeriesTime{"$StudyID:$SeriesNumber"} = $SeriesTime;
    $AcquisitionTime{"$StudyID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
    $ImageTime{"$StudyID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
-   
+
    # Sequence, Protocol Name
    $SequenceName = $d->value('0018', '0024');
    $ProtocolName = $d->value('0018', '1030');
    $SequenceName =~ s/\ $//g;
    $ProtocolName =~ s/\ $//g;
-   
+
    $SequenceName{"$StudyID:$SeriesNumber"} = $SequenceName;
    $ProtocolName{"$StudyID:$SeriesNumber"} = $ProtocolName;
   # print "[$infile:$StudyID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - $SequenceName - $ProtocolName\n";
-  
+
    print '.';
    }
 print "Done\n";
@@ -144,16 +144,16 @@ print "Done\n";
 #(0008, 0022) DA      8: AcquisitionDate                   = 20090219
 #(0008, 0023) DA      8: ImageDate                         = 20090219
 
-#(0008, 0030) TM     14: StudyTime                         = 142540.687000 
-#(0008, 0031) TM     14: SeriesTime                        = 134047.437000 
-#(0008, 0032) TM     14: AcquisitionTime                   = 134110.150000 
-#(0008, 0033) TM     14: ImageTime                         = 134111.921000 
+#(0008, 0030) TM     14: StudyTime                         = 142540.687000
+#(0008, 0031) TM     14: SeriesTime                        = 134047.437000
+#(0008, 0032) TM     14: AcquisitionTime                   = 134110.150000
+#(0008, 0033) TM     14: ImageTime                         = 134111.921000
 
 
-#(0020, 0010) SH      8: StudyID                           = 5150440 
+#(0020, 0010) SH      8: StudyID                           = 5150440
 #(0020, 0011) IS      2: SeriesNumber                      = 30
-#(0020, 0012) IS      2: AcquisitionNumber                 = 9 
-#(0020, 0013) IS      2: ImageNumber                       = 9 
+#(0020, 0012) IS      2: AcquisitionNumber                 = 9
+#(0020, 0013) IS      2: ImageNumber                       = 9
 
 
 # print out the database
@@ -162,10 +162,10 @@ foreach $std (sort {$a <=> $b} (keys(%db))){
 
    foreach $ser (sort {$a <=> $b} (keys(%{$db{$std}}))){
 
-      print "[$std][" . sprintf("%03d", $ser) . 
-            '][' . $SeriesDate{"$std:$ser"} . 
-            '][' . $SeriesTime{"$std:$ser"} . 
-            '] '. $ProtocolName{"$std:$ser"} . 
+      print "[$std][" . sprintf("%03d", $ser) .
+            '][' . $SeriesDate{"$std:$ser"} .
+            '][' . $SeriesTime{"$std:$ser"} .
+            '] '. $ProtocolName{"$std:$ser"} .
             ' ';
 
       print "   ";
@@ -177,20 +177,20 @@ foreach $std (sort {$a <=> $b} (keys(%db))){
          @imgs = (sort {$a <=> $b} (keys(%{$db{$std}{$ser}{$acq}})));
 
          print '(' . join(' ', @imgs) . ') ' if($#imgs > 0);
-         
+
          if($opt{'move'}){
             foreach $img (@imgs){
-               
+
                $infile = $db{$std}{$ser}{$acq}{$img};
-               
+
                $protocol = $ProtocolName{"$std:$ser"};
                $protocol =~ s/\//\-/g;
                $protocol =~ s/\ /\-/g;
                $outdir = "$std/" . sprintf("%04d", $ser) . "_$protocol";
                $outfile = sprintf("%04d-%04d.dcm", $acq, $img);
-               
+
             #   print "$infile => $outdir/$outfile\n";
-               
+
                &do_cmd('mkdir', '-p', $outdir);
                &do_cmd('mv', '-i', $infile, "$outdir/$outfile");
                }
@@ -201,7 +201,7 @@ foreach $std (sort {$a <=> $b} (keys(%db))){
    }
 
 
-sub do_cmd { 
+sub do_cmd {
    print STDOUT "@_\n" if $opt{verbose};
    if(!$opt{fake}){
       system(@_) == 0 or die;
