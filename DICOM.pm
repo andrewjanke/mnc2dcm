@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.3 2009/02/06 05:08:25 rotor Exp $
+# $Id: DICOM.pm,v 1.4 2009/03/09 13:48:30 rotor Exp $
 
 package DICOM;
 
@@ -12,17 +12,17 @@ use strict;
 use vars qw($VERSION %dict);
 
 use DICOM::Element;
-use DICOM::Fields;	# Standard header definitions.
-use DICOM::Private;	# Private or custom definitions.
+use DICOM::Fields;   # Standard header definitions.
+use DICOM::Private;  # Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
-my $sortIndex;		# Field to sort by.
-my %opts;		# Command line options.
-my $isdicm;		# Set to 1 if DICM file; 0 if NEMA.
-my $currentfile;	# Currently open file.
-my $preamblebuff = 0;	# Store initial 0x80 bytes.
+my $sortIndex;    # Field to sort by.
+my %opts;      # Command line options.
+my $isdicm;    # Set to 1 if DICM file; 0 if NEMA.
+my $currentfile;  # Currently open file.
+my $preamblebuff = 0;   # Store initial 0x80 bytes.
 
 # Initialize dictionary only once.
 # Read the contents of the DICOM dictionary into a hash by group and element.
@@ -54,8 +54,8 @@ sub processOpts {
   %opts = %$href;
 
   foreach my $key (keys %opts) {
-    ($key eq 's') and $this->setIndex($opts{$key});	# Sort.
-    ($key eq 'm') and $this->editHeader($opts{$key});	# Modify header.
+    ($key eq 's') and $this->setIndex($opts{$key});   # Sort.
+    ($key eq 'm') and $this->editHeader($opts{$key}); # Modify header.
     ($key eq 'o') and $outfile = $opts{$key};
   }
   # 'Save As' option is processed last.

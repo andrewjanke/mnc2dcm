@@ -1,17 +1,17 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.2 2008/12/11 03:20:38 rotor Exp $
+# $Id: Element.pm,v 1.3 2009/03/09 13:48:30 rotor Exp $
 
 # Each element is a hash with the following keys:
-#   group	Group (hex).
-#   element	Element within group (hex).
-#   offset	Offset from file start (dec).
-#   code	Field code eg 'US', 'UI'.
-#   length	Field value length (dec).
-#   name	Field descriptive name.
-#   value	Value.
-#   header	All bytes up to value, for easy writing.
+#   group   Group (hex).
+#   element Element within group (hex).
+#   offset  Offset from file start (dec).
+#   code Field code eg 'US', 'UI'.
+#   length  Field value length (dec).
+#   name Field descriptive name.
+#   value   Value.
+#   header  All bytes up to value, for easy writing.
 
 package DICOM::Element;
 
@@ -19,10 +19,10 @@ use strict;
 use DICOM::VRfields;
 use vars qw($VERSION %VR);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /: (\d+)\.(\d+)/;
 
-#my %VR;			# Value Representations (DICOM Std PS 3.5 Sect 6.2)
-my ($SHORT, $INT) = (2, 4);	# Constants: Byte sizes.
+#my %VR;       # Value Representations (DICOM Std PS 3.5 Sect 6.2)
+my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
 # Names of the element fields.
 my @fieldnames = qw(group element offset code length name value header);
@@ -35,6 +35,9 @@ BEGIN {
     next if ($line =~ /^\#/);
     my ($vr, $name, $len, $fix, $numeric, $byteswap) = split(/\t+/, $line);
     $VR{$vr} = [($name, $len, $fix, $numeric, $byteswap)];
+    
+    print "[VR] : $name, $len, $fix, $numeric, $byteswap\n";
+    
   }
 }
 
@@ -99,7 +102,7 @@ sub fill {
 
     # byte swap value if appropriate
 #    if($vrbyteswap && ($big_endian_image xor $big_endian_machine)) {
-#	byteswap(\$this->{'value'});
+#  byteswap(\$this->{'value'});
 #    }
 
     # UI may be padded with single trailing NULL (PS 3.5: 6.2.1)
@@ -110,7 +113,7 @@ sub fill {
 }
 
 # readInt(instream, bytelength, fieldlength).
-#   instream:	Input file stream.
+#   instream:  Input file stream.
 #   bytelength: SHORT (2) or INT (4) bytes.
 #   fieldlength:Total number of bytes in the field.
 # If fieldlength > bytelength, multiple values are read in and
@@ -191,31 +194,31 @@ sub readSequence {
 
     # defined length
     if($len > 0 and $len != 0xFFFFFFFF) {
-#	printf "skipping forward 0x%x bytes\n", $len;
-	read($IN, $buff, $len);
+#  printf "skipping forward 0x%x bytes\n", $len;
+   read($IN, $buff, $len);
     } else {
       READLOOP:
-	while(read($IN, $buff, 2)) {
-	    $buff = unpack('v', $buff);
-	    if($buff == 0xFFFE) {
-#		print "found start of delimiter\n";
-		read($IN, $buff, 2);
-		$buff = unpack('v', $buff);
-		if($buff == 0xE0DD) {
-#		    print "found end of delimiter\n";
-		    read($IN, $buff, 4);
-		    $buff = unpack('v', $buff);
-		    if($buff == 0x00000000) {
-#			print "found length 0\n";
-			last READLOOP;
-		    } else {
-			seek($IN, -4, 1);
-		    }
-		} else {
-		    seek($IN, -2, 1);
-		}
-	    }
-	}
+   while(read($IN, $buff, 2)) {
+       $buff = unpack('v', $buff);
+       if($buff == 0xFFFE) {
+#     print "found start of delimiter\n";
+      read($IN, $buff, 2);
+      $buff = unpack('v', $buff);
+      if($buff == 0xE0DD) {
+#         print "found end of delimiter\n";
+          read($IN, $buff, 4);
+          $buff = unpack('v', $buff);
+          if($buff == 0x00000000) {
+#        print "found length 0\n";
+         last READLOOP;
+          } else {
+         seek($IN, -4, 1);
+          }
+      } else {
+          seek($IN, -2, 1);
+      }
+       }
+   }
     }
 
     return 'skipped';
@@ -272,12 +275,12 @@ sub readLength {
       my $ref = $VR{$vrstr};
       my ($name, $bytes, $fixed, $numeric, $byteswap) = @$ref;
       if ($bytes == 0) {
-	# This is an OB, OW, SQ, UN or UT: 32 bit VL field.
-	# Have seen in some files length 0xffff here...
-	$length = readInt($IN, $INT);
+   # This is an OB, OW, SQ, UN or UT: 32 bit VL field.
+   # Have seen in some files length 0xffff here...
+   $length = readInt($IN, $INT);
       } else {
-	# This is an explicit VR with 16 bit length.
-	$length = ($b3 << 8) + $b2;
+   # This is an explicit VR with 16 bit length.
+   $length = ($b3 << 8) + $b2;
     }
   } else {
       # Made it to here: Implicit VR, 32 bit length.
@@ -297,8 +300,8 @@ sub values {
 
   # Fieldnames are group element offset code length name value header.
   my @vals = @hash{@fieldnames};
-  @vals = splice(@vals, 0, 6);	# Omit value & header.
-  push(@vals, $this->valueString());		# Add value.
+  @vals = splice(@vals, 0, 6);   # Omit value & header.
+  push(@vals, $this->valueString());      # Add value.
   return @vals;
 }
 
@@ -323,13 +326,13 @@ sub valueString {
   } elsif ($code eq '--') {
       # Don't return value if it contains binary characters.
       if(defined($this->{'length'})) {
-	  foreach my $i (0..($this->{'length'} - 1)) {
+     foreach my $i (0..($this->{'length'} - 1)) {
               #print "$this->{'code'} $this->{'group'}:$this->{'element'} ($this->{'length'})\n";
-	      my $val = ord(substr($value, $i, 1));
-	      $value = "" if ($val > 0x0 and ($val < 0x20 or $val >= 0x80));
-	  }
+         my $val = ord(substr($value, $i, 1));
+         $value = "" if ($val > 0x0 and ($val < 0x20 or $val >= 0x80));
+     }
       } else {
-	  $value = "";
+     $value = "";
       }
   } 
   
@@ -345,16 +348,16 @@ sub write {
   my ($gp, $el, $offs, $code, $len, $name, $valstr) = $this->values();
   my ($hdr, $val) = @hash{qw(header value)};
 
-  if ($gp eq '0018') {
+  if ($gp eq '0002') {
   printf "Writing $code $gp:$el ($name/$len) : [$val]\n";
   }
 
   print $OUTFILE $hdr;
  SWITCH: {
-  if ($code eq "UL") { $this->writeInt($OUTFILE, $INT);   last SWITCH; }
-  if ($code eq "US") { $this->writeInt($OUTFILE, $SHORT); last SWITCH; }
-  if ($code eq "FD") { $this->writeFloat($OUTFILE, $DOUBLE); last SWITCH; }
-  if ($code eq "FL") { $this->writeFloat($OUTFILE, $FLOAT); last SWITCH; }
+   if($code eq "UL"){ $this->writeInt($OUTFILE, $INT);      last SWITCH; }
+   if($code eq "US"){ $this->writeInt($OUTFILE, $SHORT);    last SWITCH; }
+   if($code eq "FD"){ $this->writeFloat($OUTFILE, $DOUBLE); last SWITCH; }
+   if($code eq "FL"){ $this->writeFloat($OUTFILE, $FLOAT);  last SWITCH; }
   
   # Trim value to length (may have been edited), null pad if necessary.
 #    $val = substr($val, 0, $len);
@@ -372,7 +375,6 @@ sub value {
 }
 
 # Set the value field of this element.  Truncates to max length.
-
 sub setValue {
   my $this = shift;
   my $code = $this->{'code'};
@@ -393,9 +395,6 @@ sub setValue {
 
       last SWITCH;
     }
-    if ($code eq "US") { $this->fix_length(2, $value); last SWITCH; }
-    if ($code eq "UL") { $this->fix_length(4, $value); last SWITCH; }
-    if ($code eq "DA") { $this->fix_length(8, $value); last SWITCH; }
     if ($code eq "IS") { $this->fix_length(12, $value); last SWITCH; }
     if ($code eq "LO") { $this->fix_length(64, $value); last SWITCH; }
     if ($code eq "DT") { $this->fix_length(26, $value); last SWITCH; }
@@ -410,6 +409,8 @@ sub setValue {
     if ($code eq "UI") { $this->fix_length(64, $value); last SWITCH; }
   }
 
+  print "Setting value of $value for " . $this->{'group'} . "  " . $this->{'element'} . "\n";
+
   $value = substr($value, 0, $this->{'length'});
   $this->{'value'} = $value;
 }
@@ -419,12 +420,12 @@ sub byteswap {
     
     my $packed = 0;
     if(length($$valref) % 2 != 0) {
-	$packed = 1;
-	substr($$valref, -1, 1) = "x".substr($$valref, -1, 1);
+   $packed = 1;
+   substr($$valref, -1, 1) = "x".substr($$valref, -1, 1);
     }
     $$valref = pack('n*', unpack('v*', $$valref));
     if($packed) {
-	substr($$valref, -1, 1) = '';
+   substr($$valref, -1, 1) = '';
     }
 }
 

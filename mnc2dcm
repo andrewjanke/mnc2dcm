@@ -102,10 +102,11 @@ my $d = DICOM->new();
 
 # Dicom things (0002 group)
 # MetaElementGroupLength
-$d->{'0002'}{'0000'} = &create_element('0002', '0000', 111);
+#$d->{'0002'}{'0000'} = &create_element('0002', '0000', '111');
 
 # FileMetaInformationVersion
-$d->{'0002'}{'0001'} = &create_element('0002', '0001', "A\0");
+$d->{'0002'}{'0001'} = &create_element('0002', '0001', "\002\000");
+
 
 # MediaStorageSOPClassUID
 $d->{'0002'}{'0002'} = &create_element('0002', '0002', '1.2.840.10008.5.1.4.1.1.20');
@@ -149,28 +150,28 @@ $d->{'0008'}{'0016'} = &create_element('0008', '0016', '1.2.840.10008.5.1.4.1.1.
 $d->{'0008'}{'0018'} = &create_element('0008', '0018', '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
 
 # StudyDate
-$d->{'0008'}{'0020'} = &create_element('0008', '0020', '');
+$d->{'0008'}{'0020'} = &create_element('0008', '0020', '20081210');
 
 # SeriesDate
-$d->{'0008'}{'0021'} = &create_element('0008', '0021', '');
+$d->{'0008'}{'0021'} = &create_element('0008', '0021', '20081210');
 
 # AcquisitionDate
-$d->{'0008'}{'0022'} = &create_element('0008', '0022', '');
+$d->{'0008'}{'0022'} = &create_element('0008', '0022', '20081210');
 
 # ImageDate
-$d->{'0008'}{'0023'} = &create_element('0008', '0023', '');
+$d->{'0008'}{'0023'} = &create_element('0008', '0023', '20081210');
 
 # StudyTime
-$d->{'0008'}{'0030'} = &create_element('0008', '0030', '000000');
+$d->{'0008'}{'0030'} = &create_element('0008', '0030', '1200');
 
 # SeriesTime
-$d->{'0008'}{'0031'} = &create_element('0008', '0031', '000000');
+$d->{'0008'}{'0031'} = &create_element('0008', '0031', '1200');
 
 # AcquisitionTime
-$d->{'0008'}{'0032'} = &create_element('0008', '0032', '000000');
+$d->{'0008'}{'0032'} = &create_element('0008', '0032', '1200');
 
 # ImageTime
-$d->{'0008'}{'0033'} = &create_element('0008', '0033', '000000');
+$d->{'0008'}{'0033'} = &create_element('0008', '0033', '1200');
 
 # AccessionNumber
 $d->{'0008'}{'0050'} = &create_element('0008', '0050', '1');
@@ -179,16 +180,16 @@ $d->{'0008'}{'0050'} = &create_element('0008', '0050', '1');
 $d->{'0008'}{'0060'} = &create_element('0008', '0060', 'NM');
 
 # Manufacturer
-$d->{'0008'}{'0070'} = &create_element('0008', '0070', '(X)MedCon');
+$d->{'0008'}{'0070'} = &create_element('0008', '0070', 'minc');
 
 # InstitutionName
-$d->{'0008'}{'0080'} = &create_element('0008', '0080', 'UZGENT');
+$d->{'0008'}{'0080'} = &create_element('0008', '0080', 'Unknown');
 
 # ReferringPhysicianName
 $d->{'0008'}{'0090'} = &create_element('0008', '0090', 'Unknown^^^^');
 
 # StudyDescription
-$d->{'0008'}{'1030'} = &create_element('0008', '1030', 'mnc2nii sml.mnc out.hdr');
+$d->{'0008'}{'1030'} = &create_element('0008', '1030', 'mnc2dcm infile outfile');
 
 # SeriesDescription
 $d->{'0008'}{'103E'} = &create_element('0008', '103E', 'Unknown');
@@ -197,7 +198,7 @@ $d->{'0008'}{'103E'} = &create_element('0008', '103E', 'Unknown');
 $d->{'0008'}{'1070'} = &create_element('0008', '1070', 'Unknown');
 
 # DerivationDescription
-$d->{'0008'}{'2111'} = &create_element('0008', '2111', '(X)MedCon 0.10.4 by Erik Nolf');
+$d->{'0008'}{'2111'} = &create_element('0008', '2111', 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
 
 
 # (0010 group)
@@ -208,17 +209,9 @@ $d->{'0010'}{'0030'} = &create_element('0010', '0030', "19990101");
 $d->{'0010'}{'0040'} = &create_element('0010', '0040', "M");
 
 
-# Study, Series, Acquisition, Image Date
-$d->{'0008'}{'0020'} = &create_element('0008', '0020', "20081210");
-$d->{'0008'}{'0021'} = &create_element('0008', '0021', "20081210");
-$d->{'0008'}{'0022'} = &create_element('0008', '0022', "20081210");
-$d->{'0008'}{'0023'} = &create_element('0008', '0023', "20081210");
-
-# Series time
-$d->{'0008'}{'0031'} = &create_element('0008', '0031', "1200");
-
 # Sequence name
 $d->{'0018'}{'1030'} = &create_element('0018', '1030', "fMRI-test");
+
 
 # Image Comment
 $d->{'0020'}{'4000'} = &create_element('0020', '4000', "Created by $me ($VERSION)");
@@ -241,11 +234,11 @@ $args = join(' ', @args);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
 # set columns and rows
-$d->{'0028'}{'0010'} = &create_element('0028', '0010', pack("S", $xsize));
+$d->{'0028'}{'0010'} = &create_element('0028', '0010', $xsize);
 $d->{'0028'}{'0011'} = &create_element('0028', '0011', $ysize);
 
 # PixelSpacing
-$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0\1.0");
+$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0\\1.0");
 
 
 # SamplesPerPixel
@@ -264,19 +257,19 @@ $d->{'0028'}{'0102'} = &create_element('0028', '0102', 15);
 $d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
 
 # ImagePosition
-#$d->{'0020'}{'0030'} = &create_element('0020', '0030', 0);
+$d->{'0020'}{'0030'} = &create_element('0020', '0030', 0);
 
 # ImagePositionPatient
-#$d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
+$d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
 
 # PixelData
 $d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
 
 
-$size = &calc_size($d);
+#$size = &calc_size($d);
 
-$d->setElementValue('0002', '0000', $size);
-print STDOUT "Total size: $size\n";
+#$d->setElementValue('0002', '0000', $size);
+#print STDOUT "Total size: $size\n";
 
 # for each slice
 foreach $s (0..($zsize-1)){
@@ -297,12 +290,12 @@ foreach $s (0..($zsize-1)){
    $buf =~ s/\ /\,\ /g;
 
    print "BUF = $buf\n\n";
-#   $d->setElementValue('0020', '0032', $buf);
+   $d->setElementValue('0020', '0032', $buf);
 
    # get and set the slice
    $data = `mincextract -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
    $d->{'7FE0'}{'0010'}->{'length'} = 2 * $xsize * $ysize;
-   $d->{'7FE0'}{'0010'}->{'value'} = $data;
+   #$d->{'7FE0'}{'0010'}->{'value'} = $data;
 
    # write this slice out
    $d->write($outfile);
@@ -342,10 +335,10 @@ sub calc_size {
 
    $size = 0;
 #   foreach $gp (keys(%hash)){
-   foreach $gp ('0002', '0008'){
+   foreach $gp ('0002'){
       foreach $el (keys(%{$hash{$gp}})){
          $size += $hash{$gp}{$el}->{'length'};
-         print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "    $size\n";
+         print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "    $size " . $hash{$gp}{$el}->{'value'} . "\n";
          }
 
       }
