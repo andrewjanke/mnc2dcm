@@ -102,7 +102,7 @@ my $d = DICOM->new();
 
 # Dicom things (0002 group)
 # MetaElementGroupLength
-#$d->{'0002'}{'0000'} = &create_element('0002', '0000', '111');
+$d->{'0002'}{'0000'} = &create_element('0002', '0000', '111');
 
 # FileMetaInformationVersion
 $d->{'0002'}{'0001'} = &create_element('0002', '0001', "\002\000");
@@ -266,10 +266,10 @@ $d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
 $d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
 
 
-#$size = &calc_size($d);
+$size = &calc_size($d);
 
-#$d->setElementValue('0002', '0000', $size);
-#print STDOUT "Total size: $size\n";
+$d->setElementValue('0002', '0000', $size);
+print STDOUT "Total size: $size\n";
 
 # for each slice
 foreach $s (0..($zsize-1)){
