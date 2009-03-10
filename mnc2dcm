@@ -19,7 +19,6 @@ use File::Temp qw/ tempdir /;
 use Cwd;
 
 use DICOM;
-use DICOM::Fields;
 use DICOM::Element;
 
 # until I get organised and do this properly
@@ -67,13 +66,13 @@ $outdir = $ARGV[1];
 # set up tmpdir
 $opt{tmpdir} = &tempdir( "$me-XXXXXXXX", TMPDIR => 1, CLEANUP => 1 );
 
-# initialise the dictionary using defaults
-foreach my $line (@dicom_fields) {
-   next if ($line =~ /^\#/);
-   my ($group, $elem, $code, $numa, $name) = split(/\s+/, $line);
-   my @lst = ($code, $name);
-   $dict{$group}{$elem} = [@lst];
-   }
+## initialise the dictionary using defaults
+#foreach my $line (@dicom_fields) {
+#   next if ($line =~ /^\#/);
+#   my ($group, $elem, $code, $numa, $name) = split(/\s+/, $line);
+#   my @lst = ($code, $name);
+#   $dict{$group}{$elem} = [@lst];
+#   }
 
 # check for infile
 if(!-e $infile){
@@ -102,124 +101,123 @@ my $d = DICOM->new();
 
 # Dicom things (0002 group)
 # MetaElementGroupLength
-$d->{'0002'}{'0000'} = &create_element('0002', '0000', '111');
+$d->create_element('0002', '0000', '111');
 
 # FileMetaInformationVersion
-$d->{'0002'}{'0001'} = &create_element('0002', '0001', "\002\000");
-
+$d->create_element('0002', '0001', "\002\000");
 
 # MediaStorageSOPClassUID
-$d->{'0002'}{'0002'} = &create_element('0002', '0002', '1.2.840.10008.5.1.4.1.1.20');
+$d->create_element('0002', '0002', '1.2.840.10008.5.1.4.1.1.20');
 
 # MediaStorageSOPInstanceUID
-$d->{'0002'}{'0003'} = &create_element('0002', '0003', '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+$d->create_element('0002', '0003', '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
 
 # TransferSyntaxUID - explicit VR little
-$d->{'0002'}{'0010'} = &create_element('0002', '0010', '1.2.840.10008.1.2.1');
+$d->create_element('0002', '0010', '1.2.840.10008.1.2.1');
 
 # ImplementationClassUID
-$d->{'0002'}{'0012'} = &create_element('0002', '0012', '0.0.0.0');
+$d->create_element('0002', '0012', '0.0.0.0');
 
 # ImplementationVersionName
-$d->{'0002'}{'0013'} = &create_element('0002', '0013', 'NOTSPECIFIED');
+$d->create_element('0002', '0013', 'NOTSPECIFIED');
 
 # SourceApplicationEntityTitle
-$d->{'0002'}{'0016'} = &create_element('0002', '0016', 'NOTSPECIFIED');
+$d->create_element('0002', '0016', 'NOTSPECIFIED');
 
 
 # (0008 group)
 # SpecificCharacterSet
-$d->{'0008'}{'0005'} = &create_element('0008', '0005', 'ISO_IR 100');
+$d->create_element('0008', '0005', 'ISO_IR 100');
 
 # ImageType
-$d->{'0008'}{'0008'} = &create_element('0008', '0008', 'DERIVED\PRIMARY\RECON TOMO\EMISSION');
+$d->create_element('0008', '0008', 'DERIVED\PRIMARY\RECON TOMO\EMISSION');
 
 # InstanceCreationDate
-$d->{'0008'}{'0012'} = &create_element('0008', '0012', '20090303');
+$d->create_element('0008', '0012', '20090303');
 
 # InstanceCreationTime
-$d->{'0008'}{'0013'} = &create_element('0008', '0013', '224555');
+$d->create_element('0008', '0013', '224555');
 
 # InstanceCreatorUID
-$d->{'0008'}{'0014'} = &create_element('0008', '0014', '777.777.0.0.0');
+$d->create_element('0008', '0014', '777.777.0.0.0');
 
 # SOPClassUID
-$d->{'0008'}{'0016'} = &create_element('0008', '0016', '1.2.840.10008.5.1.4.1.1.20');
+$d->create_element('0008', '0016', '1.2.840.10008.5.1.4.1.1.20');
 
 # SOPInstanceUID
-$d->{'0008'}{'0018'} = &create_element('0008', '0018', '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
+$d->create_element('0008', '0018', '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
 
 # StudyDate
-$d->{'0008'}{'0020'} = &create_element('0008', '0020', '20081210');
+$d->create_element('0008', '0020', '20081210');
 
 # SeriesDate
-$d->{'0008'}{'0021'} = &create_element('0008', '0021', '20081210');
+$d->create_element('0008', '0021', '20081210');
 
 # AcquisitionDate
-$d->{'0008'}{'0022'} = &create_element('0008', '0022', '20081210');
+$d->create_element('0008', '0022', '20081210');
 
 # ImageDate
-$d->{'0008'}{'0023'} = &create_element('0008', '0023', '20081210');
+$d->create_element('0008', '0023', '20081210');
 
 # StudyTime
-$d->{'0008'}{'0030'} = &create_element('0008', '0030', '1200');
+$d->create_element('0008', '0030', '1200');
 
 # SeriesTime
-$d->{'0008'}{'0031'} = &create_element('0008', '0031', '1200');
+$d->create_element('0008', '0031', '1200');
 
 # AcquisitionTime
-$d->{'0008'}{'0032'} = &create_element('0008', '0032', '1200');
+$d->create_element('0008', '0032', '1200');
 
 # ImageTime
-$d->{'0008'}{'0033'} = &create_element('0008', '0033', '1200');
+$d->create_element('0008', '0033', '1200');
 
 # AccessionNumber
-$d->{'0008'}{'0050'} = &create_element('0008', '0050', '1');
+$d->create_element('0008', '0050', '1');
 
 # Modality
-$d->{'0008'}{'0060'} = &create_element('0008', '0060', 'NM');
+$d->create_element('0008', '0060', 'NM');
 
 # Manufacturer
-$d->{'0008'}{'0070'} = &create_element('0008', '0070', 'minc');
+$d->create_element('0008', '0070', 'minc');
 
 # InstitutionName
-$d->{'0008'}{'0080'} = &create_element('0008', '0080', 'Unknown');
+$d->create_element('0008', '0080', 'Unknown');
 
 # ReferringPhysicianName
-$d->{'0008'}{'0090'} = &create_element('0008', '0090', 'Unknown^^^^');
+$d->create_element('0008', '0090', 'Unknown^^^^');
 
 # StudyDescription
-$d->{'0008'}{'1030'} = &create_element('0008', '1030', 'mnc2dcm infile outfile');
+$d->create_element('0008', '1030', 'mnc2dcm infile outfile');
 
 # SeriesDescription
-$d->{'0008'}{'103E'} = &create_element('0008', '103E', 'Unknown');
+$d->create_element('0008', '103E', 'Unknown');
 
 # OperatorName
-$d->{'0008'}{'1070'} = &create_element('0008', '1070', 'Unknown');
+$d->create_element('0008', '1070', 'Unknown');
 
 # DerivationDescription
-$d->{'0008'}{'2111'} = &create_element('0008', '2111', 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
+$d->create_element('0008', '2111', 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
 
 
 # (0010 group)
 # Patient Name, ID, BirthDate, Sex
-$d->{'0010'}{'0010'} = &create_element('0010', '0010', "JOHN^DOE");
-$d->{'0010'}{'0020'} = &create_element('0010', '0020', "PatientID");
-$d->{'0010'}{'0030'} = &create_element('0010', '0030', "19990101");
-$d->{'0010'}{'0040'} = &create_element('0010', '0040', "M");
+$d->create_element('0010', '0010', "JOHN^DOE");
+$d->create_element('0010', '0020', "PatientID");
+$d->create_element('0010', '0030', "19990101");
+$d->create_element('0010', '0040', "M");
 
 
 # Sequence name
-$d->{'0018'}{'1030'} = &create_element('0018', '1030', "fMRI-test");
+$d->create_element('0018', '1030', "fMRI-test");
 
 
 # Image Comment
-$d->{'0020'}{'4000'} = &create_element('0020', '4000', "Created by $me ($VERSION)");
+$d->create_element('0020', '4000', "Created by $me ($VERSION)");
 
 # StudyID, SeriesNumber, AcquisitionNumber
-$d->{'0020'}{'0010'} = &create_element('0020', '0010', 1);
-$d->{'0020'}{'0011'} = &create_element('0020', '0011', 1);
-$d->{'0020'}{'0012'} = &create_element('0020', '0012', 1);
+$d->create_element('0020', '0010', 1);
+$d->create_element('0020', '0011', 1);
+$d->create_element('0020', '0012', 1);
 
 
 # Get sizes
@@ -234,36 +232,36 @@ $args = join(' ', @args);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
 # set columns and rows
-$d->{'0028'}{'0010'} = &create_element('0028', '0010', $xsize);
-$d->{'0028'}{'0011'} = &create_element('0028', '0011', $ysize);
+$d->create_element('0028', '0010', $xsize);
+$d->create_element('0028', '0011', $ysize);
 
 # PixelSpacing
-$d->{'0028'}{'0030'} = &create_element('0028', '0030', "1.0\\1.0");
+$d->create_element('0028', '0030', "1.0\\1.0");
 
 
 # SamplesPerPixel
-$d->{'0028'}{'0002'} = &create_element('0028', '0002', 1);
+$d->create_element('0028', '0002', 1);
 
 # PixelRepresentation
-$d->{'0028'}{'0103'} = &create_element('0028', '0103', 0);
+$d->create_element('0028', '0103', 0);
 
 # BitsAllocated, BitsStored, HighBit
-$d->{'0028'}{'0100'} = &create_element('0028', '0100', 16);
-$d->{'0028'}{'0101'} = &create_element('0028', '0101', 16);
-$d->{'0028'}{'0102'} = &create_element('0028', '0102', 15);
+$d->create_element('0028', '0100', 16);
+$d->create_element('0028', '0101', 16);
+$d->create_element('0028', '0102', 15);
 
 
 # first create the required elements (setting to null and/or 0)
-$d->{'0020'}{'0013'} = &create_element('0020', '0013', 0);
+$d->create_element('0020', '0013', 0);
 
 # ImagePosition
-$d->{'0020'}{'0030'} = &create_element('0020', '0030', 0);
+$d->create_element('0020', '0030', 0);
 
 # ImagePositionPatient
-$d->{'0020'}{'0032'} = &create_element('0020', '0032', 0);
+$d->create_element('0020', '0032', 0);
 
 # PixelData
-$d->{'7FE0'}{'0010'} = &create_element('7FE0', '0010', 0);
+$d->create_element('7FE0', '0010', 0);
 
 
 $size = &calc_size($d);
@@ -301,11 +299,8 @@ foreach $s (0..($zsize-1)){
    $d->write($outfile);
    }
 
-# debug rooting
-#$d->fill("minimal.dcm");
-
 print "CONTENTS: \n";
-$d->printContents();
+# $d->printContents();
 
 # sub sdbm - hashing function from here:
 #   http://www.cse.yorku.ca/~oz/hash.html
@@ -349,28 +344,28 @@ sub calc_size {
 
 # create and element, fill in the missing bits
 # from the dictionary and set its value
-sub create_element {
-
-   ($gr, $el, $val) = @_;
-
-   # create the new element
-   my $n = DICOM::Element->new();
-
-   # set the group and element ids
-   $n->{'group'} = $gr;
-   $n->{'element'} = $el;
-
-   # get the element type and name from the data dictionary
-   ($n->{'code'}, $n->{'name'}) = @{$dict{$gr}{$el}};
-
-   # set the offset to zero for now
-   $n->{'offset'} = 0;
-
-   # set the value
-   $n->setValue($val);
-
-   return $n;
-   }
+#sub create_element {
+#
+#   ($gr, $el, $val) = @_;
+#
+#   # create the new element
+#   my $n = DICOM::Element->new();
+#
+#   # set the group and element ids
+#   $n->{'group'} = $gr;
+#   $n->{'element'} = $el;
+#
+#   # get the element type and name from the data dictionary
+#   ($n->{'code'}, $n->{'name'}) = @{$dict{$gr}{$el}};
+#
+#   # set the offset to zero (we dont use it anyhow)
+#   $n->{'offset'} = 0;
+#
+#   # set the value
+#   $n->setValue($val);
+#
+#   return $n;
+#   }
 
 
 sub do_cmd {

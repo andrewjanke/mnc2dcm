@@ -1,6 +1,6 @@
 # Definitions of fields of DICOM headers.
 # Andrew Crabb (ahc@jhu.edu), May 2002.
-# $Id: Fields.pm,v 1.1 2008/12/10 02:13:37 rotor Exp $
+# $Id: Fields.pm,v 1.2 2009/03/10 10:05:20 rotor Exp $
 
 package DICOM::Fields;
 
@@ -8,22 +8,22 @@ use strict;
 
 require Exporter;
 use vars qw(@ISA @EXPORT $VERSION @dicom_fields);
+use Data::Dumper;
 
 @ISA = qw(Exporter);
 @EXPORT = qw(@dicom_fields);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.1 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 
 # ------------------------------------------------------------------------
 # NOT FOR MEDICAL USE.  This file is provided purely for experimental use.
 # ------------------------------------------------------------------------
-
-@dicom_fields = (<<END_DICOM_FIELDS =~ m/^\s*(.+)/gm);
+@dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0000   0000   UL   1      GroupLength
 0000   0001   UL   1      CommandLengthToEnd
 0000   0002   UI   1      AffectedSOPClassUID
 0000   0003   UI   1      RequestedSOPClassUID
 0000   0010   CS   1      CommandRecognitionCode
-0000   0100   US   1      CommandField
+0000   0100   US   1      CommandField 
 0000   0110   US   1      MessageID
 0000   0120   US   1      MessageIDBeingRespondedTo
 0000   0200   AE   1      Initiator

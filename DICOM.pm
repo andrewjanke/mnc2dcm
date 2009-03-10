@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.4 2009/03/09 13:48:30 rotor Exp $
+# $Id: DICOM.pm,v 1.5 2009/03/10 10:05:20 rotor Exp $
 
 package DICOM;
 
@@ -12,10 +12,11 @@ use strict;
 use vars qw($VERSION %dict);
 
 use DICOM::Element;
-use DICOM::Fields;   # Standard header definitions.
+use DICOM::Fields qw/@dicom_fields/;   # Standard header definitions.
+use DICOM::VRfields; # Field data types
 use DICOM::Private;  # Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;    # Field to sort by.
@@ -24,17 +25,28 @@ my $isdicm;    # Set to 1 if DICM file; 0 if NEMA.
 my $currentfile;  # Currently open file.
 my $preamblebuff = 0;   # Store initial 0x80 bytes.
 
+my %dicom_dict;
+
 # Initialize dictionary only once.
 # Read the contents of the DICOM dictionary into a hash by group and element.
 # dicom_private is read after dicom_fields, so overrides common fields.
 BEGIN {
-  foreach my $line (@dicom_fields, @dicom_private) {
-    next if ($line =~ /^\#/);
-    my ($group, $elem, $code, $numa, $name) = split(/\s+/, $line);
-    my @lst = ($code, $name);
-    $dict{$group}{$elem} = [@lst];
-  }
-}
+   my ($line, $group, $element, $vr, $size, $name);
+  
+   foreach $line (@dicom_fields, @dicom_private) {
+      next if ($line =~ /^\#/);
+    ( $group, $element, $vr, $size, $name) = split(/\s+/, $line);
+      my @lst = ($vr, $name);
+      $dict{$group}{$element} = [@lst];
+      }
+   
+   foreach $line (@dicom_fields, @dicom_private){
+      ($group, $element, $vr, $size, $name) = split(/\s+/, $line);
+      $dicom_dict{$group}{$element} = [($vr, $size, $name)];
+      }
+   
+   print "DICOM::Fields - built data dictionary\n";
+   }
 
 sub new {
   my $class = shift;
@@ -90,6 +102,45 @@ sub fill {
   close(INFILE);
   return 0;
 }
+
+# create new element and fill it from params
+sub create_element {
+   my ($this, $gr, $el, $val) = @_;
+   
+   # create the new element
+   my $elem = DICOM::Element->new();
+
+   # set the group and element ids
+   $elem->{'group'} = $gr;
+   $elem->{'element'} = $el;
+
+   # get the element type and name from the data dictionary
+   $elem->{'code'} = @{$dicom_dict{$gr}{$el}}[0];
+   $elem->{'name'} = $DICOM::Fields::dicom_dict{$gr}{$el}[2];
+   
+   print "DICT $gr $el: " . $dicom_dict{$gr}{$el}[0] . " END\n";
+   
+   # set the offset to zero (we dont use it anyhow)
+   $elem->{'offset'} = 0;
+   
+   # set the initial length
+   if($DICOM::VRfields::VR{$elem->{'code'}}[2] == 1){
+      
+      $elem->{'length'} = $DICOM::VRfields::VR{$elem->{'code'}}[1];
+      print "Fixed element[$elem->{'code'}] - $elem->{'length'}\n";
+      }
+   else{
+      print "Variable size[$elem->{'code'}]\n";
+      
+      $elem->{'length'} = 0;
+      }
+   
+   
+   # set the value
+   $elem->setValue($val);
+
+   $this->{$gr}{$el} = $elem;
+   }
 
 # Write currently open file to given file name, or to current name 
 # if no new name specified.  All fields before value are written

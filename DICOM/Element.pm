@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.4 2009/03/09 22:50:52 rotor Exp $
+# $Id: Element.pm,v 1.5 2009/03/10 10:05:20 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -16,12 +16,13 @@
 package DICOM::Element;
 
 use strict;
-use DICOM::VRfields;
-use vars qw($VERSION %VR);
+use DICOM::VRfields qw/%VR/;
+use DICOM::Fields;
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
+our ($VERSION);
 
-#my %VR;       # Value Representations (DICOM Std PS 3.5 Sect 6.2)
+$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
+
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
 # Names of the element fields.
@@ -29,17 +30,17 @@ my @fieldnames = qw(group element offset code length name value header);
 my $big_endian_machine = unpack("h*", pack("s", 1)) =~ /01/;
 
 # Initialize VR hash only once.
-# Fill in VR definitions from DICOM_fields.
-BEGIN {
-  foreach my $line (@VR) {
-    next if ($line =~ /^\#/);
-    my ($vr, $name, $len, $fix, $numeric, $byteswap) = split(/\t+/, $line);
-    $VR{$vr} = [($name, $len, $fix, $numeric, $byteswap)];
-    
-    print "[VR] : $name, $len, $fix, $numeric, $byteswap\n";
-    
-  }
-}
+#BEGIN {
+#   foreach my $vr (sort keys(%DICOM::VRfields::VR)){
+#           
+#      my ($name, $length, $fixed, $numeric, $byteswap) = 
+#         @{$DICOM::VRfields::VR{$vr}};
+#      
+#      
+#      print "[VR:$vr] : $name, $length, $fixed, $numeric, $byteswap\n";
+#      }
+#   }
+   
 
 sub new {
   my $type = shift;
@@ -353,8 +354,11 @@ sub write {
   }
   
   # build the output header
-  my $genhdr = pack('vvaaL', $gp, $el, 
-     substr($code, 0, 1), substr($code, 1, 1), $len); 
+  my $genhdr = pack('vvaaL', 
+     $gp, $el, 
+     substr($code, 0, 1), 
+     substr($code, 1, 1), 
+     $len); 
   
   print $OUTFILE $genhdr;
  SWITCH: {
