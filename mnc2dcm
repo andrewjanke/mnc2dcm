@@ -38,7 +38,7 @@ $me = &basename($0);
 
 # Get the history string
 chomp($history = `date`);
-$history .= '>>>> ' . join(' ', $me, @ARGV) . "\n";
+$history .= '>>>> ' . join(' ', $me, @ARGV);
 
 # Check arguments
 &GetOptions(
@@ -104,7 +104,8 @@ my $d = DICOM->new();
 $d->create_element(0x0002, 0x0000, 0);
 
 # FileMetaInformationVersion
-$d->create_element(0x0002, 0x0001, 0x020x00);
+$d->create_element(0x0002, 0x0001, '00');
+$d->{0x0002}{0x0001}->{'value'} = pack('cc', 0x00, 0x01);
 
 # MediaStorageSOPClassUID
 $d->create_element(0x0002, 0x0002, '1.2.840.10008.5.1.4.1.1.20');
@@ -134,7 +135,7 @@ print STDOUT "Total size: $size\n";
 $d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
 # ImageType
-$d->create_element(0x0008, 0x0008, 'DERIVED\PRIMARY\RECON TOMO\EMISSION');
+$d->create_element(0x0008, 0x0008, 'DERIVED');
 
 # InstanceCreationDate
 $d->create_element(0x0008, 0x0012, '20090303');
@@ -149,7 +150,7 @@ $d->create_element(0x0008, 0x0014, '777.777.0.0.0');
 $d->create_element(0x0008, 0x0016, '1.2.840.10008.5.1.4.1.1.20');
 
 # SOPInstanceUID
-$d->create_element(0x0008, 0x0018, '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
+$d->create_element(0x0008, 0x0018, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
 
 # StudyDate
 $d->create_element(0x0008, 0x0020, '20081210');
@@ -191,13 +192,13 @@ $d->create_element(0x0008, 0x0080, 'Unknown');
 $d->create_element(0x0008, 0x0090, 'Unknown^^^^');
 
 # StudyDescription
-$d->create_element(0x0008, 0x1030, 'mnc2dcm infile outfile');
+$d->create_element(0x0008, 0x1030, $history);
 
 # SeriesDescription
 $d->create_element(0x0008, 0x103E, 'Unknown');
 
 # OperatorName
-$d->create_element(0x0008, 0x1070, 'Unknown');
+#$d->create_element(0x0008, 0x1070, 'Andrew Janke');
 
 # DerivationDescription
 $d->create_element(0x0008, 0x2111, 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
@@ -242,7 +243,6 @@ $d->create_element(0x0028, 0x0011, $ysize);
 # PixelSpacing
 $d->create_element(0x0028, 0x0030, "1.0\\1.0");
 
-
 # SamplesPerPixel
 $d->create_element(0x0028, 0x0002, 1);
 
@@ -254,16 +254,15 @@ $d->create_element(0x0028, 0x0100, 16);
 $d->create_element(0x0028, 0x0101, 16);
 $d->create_element(0x0028, 0x0102, 15);
 
-
 # first create the required elements (setting to null and/or 0)
 # ImageNumber
 $d->create_element(0x0020, 0x0013, 0);
 
 # ImagePosition
-$d->create_element(0x0020, 0x0030, 0);
+$d->create_element(0x0020, 0x0030, "0\\0\\0");
 
 # ImagePositionPatient
-$d->create_element(0x0020, 0x0032, 0);
+$d->create_element(0x0020, 0x0032, "0\\0\\0");
 
 # PixelData
 $d->create_element(0x7FE0, 0x0010, 0);
@@ -272,6 +271,7 @@ $d->create_element(0x7FE0, 0x0010, 0);
 #foreach $s (0..($zsize-1)){
 $s=0;
 {
+   my(@pos);
 
    $outfile = "$outdir/$s.dcm";
 
@@ -281,15 +281,14 @@ $s=0;
    $d->{0x0020}{0x0013}->setValue($s);
 
    # ImagePositionPatient
-   $args = "voxeltoworld $opt{'tmpdir'}/res.mnc $s " .
-           (($ysize-1)/2) .
-           ' ' .
-           (($zsize-1)/2);
+   $args = "voxeltoworld $opt{'tmpdir'}/res.mnc " .
+           $s . ' ' . (($ysize-1)/2) . ' ' . (($zsize-1)/2);
    chomp($buf = `$args`);
-   $buf =~ s/\ /\,\ /g;
+   $buf =~ s/\ /\\/g;
+   print "BUF = $buf\n";
+   
 
-  # print "BUF = $buf\n\n";
-  # $d->setElementValue(0x0020, 0x0032, $buf);
+   $d->{0x0020}{0x0032}->setValue($buf);
 
    # get and set the slice
    $data = `mincextract -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
@@ -328,15 +327,12 @@ sub calc_size {
    my(%hash, $gp, $el, $size);
 
    %hash = %$d;
-
+   
+   $gp = 0x0002;
    $size = 0;
-#   foreach $gp (keys(%hash)){
-   foreach $gp ('0002'){
-      foreach $el (keys(%{$hash{$gp}})){
-         $size += $hash{$gp}{$el}->{'length'};
-         print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "    $size " . $hash{$gp}{$el}->{'value'} . "\n";
-         }
-
+   foreach $el (keys(%{$hash{$gp}})){
+      $size += $hash{$gp}{$el}->{'length'};
+      print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "    $size " . $hash{$gp}{$el}->{'value'} . "\n";
       }
 
    return $size;

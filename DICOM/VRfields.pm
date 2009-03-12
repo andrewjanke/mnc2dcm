@@ -1,6 +1,6 @@
 # VRfields.pm
 # Andrew Crabb (ahc@jhu.edu), May 2002.
-# $Id: VRfields.pm,v 1.4 2009/03/12 11:09:03 rotor Exp $
+# $Id: VRfields.pm,v 1.5 2009/03/12 14:11:39 rotor Exp $
 
 package DICOM::VRfields;
 
@@ -11,7 +11,7 @@ require Exporter;
 
 @ISA = qw(Exporter);
 @EXPORT = qw(%VR);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
 
 # Value Representations (DICOM Standard PS 3.5 Sect 6.2)
 # Bytes=0 => Undefined length.
@@ -32,7 +32,7 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
    'IS' => ['Integer String',             12,  0,  1,  0, 'a' ],
    'LO' => ['Long String',                64,  0,  0,  0, 'a' ],
    'LT' => ['Long Text',               10240,  0,  0,  0, 'a' ],
-   'OB' => ['Other Byte String',           0,  0,  0,  0, 'c' ],
+   'OB' => ['Other Byte String',           0,  0,  0,  0, 'C' ],
    'OF' => ['Other Float String',          0,  0,  0,  1, 'f' ],
    'OW' => ['Other Word String',           0,  0,  0,  1, 'v' ],
    'OX' => ['Binary Stream',               0,  0,  0,  1, '' ],
