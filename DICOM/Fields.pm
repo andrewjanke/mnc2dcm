@@ -1,6 +1,6 @@
 # Definitions of fields of DICOM headers.
 # Andrew Crabb (ahc@jhu.edu), May 2002.
-# $Id: Fields.pm,v 1.2 2009/03/10 10:05:20 rotor Exp $
+# $Id: Fields.pm,v 1.3 2009/03/12 02:46:24 rotor Exp $
 
 package DICOM::Fields;
 
@@ -12,7 +12,7 @@ use Data::Dumper;
 
 @ISA = qw(Exporter);
 @EXPORT = qw(@dicom_fields);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /: (\d+)\.(\d+)/;
 
 # ------------------------------------------------------------------------
 # NOT FOR MEDICAL USE.  This file is provided purely for experimental use.
@@ -646,7 +646,7 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 0028   0068   US   1      RepeatInterval
 0028   0069   US   1      BitsGrouped
 0028   0070   US   1-n    PerimeterTable
-0028   0071   XS   1      PerimeterValue
+0028   0071   US/SS   1      PerimeterValue
 0028   0080   US   1      PredictorRows
 0028   0081   US   1      PredictorColumns
 0028   0082   US   1-n    PredictorConstants
@@ -659,15 +659,15 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 0028   0101   US   1      BitsStored
 0028   0102   US   1      HighBit
 0028   0103   US   1      PixelRepresentation
-0028   0104   XS   1      SmallestValidPixelValue
-0028   0105   XS   1      LargestValidPixelValue
-0028   0106   XS   1      SmallestImagePixelValue
-0028   0107   XS   1      LargestImagePixelValue
-0028   0108   XS   1      SmallestPixelValueInSeries
-0028   0109   XS   1      LargestPixelValueInSeries
-0028   0110   XS   1      SmallestPixelValueInPlane
-0028   0111   XS   1      LargestPixelValueInPlane
-0028   0120   XS   1      PixelPaddingValue
+0028   0104   US/SS   1      SmallestValidPixelValue
+0028   0105   US/SS   1      LargestValidPixelValue
+0028   0106   US/SS   1      SmallestImagePixelValue
+0028   0107   US/SS   1      LargestImagePixelValue
+0028   0108   US/SS   1      SmallestPixelValueInSeries
+0028   0109   US/SS   1      LargestPixelValueInSeries
+0028   0110   US/SS   1      SmallestPixelValueInPlane
+0028   0111   US/SS   1      LargestPixelValueInPlane
+0028   0120   US/SS   1      PixelPaddingValue
 0028   0200   US   1      ImageLocation
 0028   0300   CS   1      QualityControlImage
 0028   0301   CS   1      BurnedInAnnotation
@@ -704,18 +704,18 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 0028   1055   LO   1-n    WindowCenterWidthExplanation
 0028   1080   CS   1      GrayScale
 0028   1090   CS   1      RecommendedViewingMode
-0028   1100   XS   3      GrayLookupTableDescriptor
-0028   1101   XS   3      RedPaletteColorLookupTableDescriptor
-0028   1102   XS   3      GreenPaletteColorLookupTableDescriptor
-0028   1103   XS   3      BluePaletteColorLookupTableDescriptor
+0028   1100   US/SS   3      GrayLookupTableDescriptor
+0028   1101   US/SS   3      RedPaletteColorLookupTableDescriptor
+0028   1102   US/SS   3      GreenPaletteColorLookupTableDescriptor
+0028   1103   US/SS   3      BluePaletteColorLookupTableDescriptor
 0028   1111   US   4      LargeRedPaletteColorLookupTableDescriptor
 0028   1112   US   4      LargeGreenPaletteColorLookupTabe
 0028   1113   US   4      LargeBluePaletteColorLookupTabl
 0028   1199   UI   1      PaletteColorLookupTableUID
-0028   1200   XS   1-n    GrayLookupTableData
-0028   1201   XS   1-n    RedPaletteColorLookupTableData
-0028   1202   XS   1-n    GreenPaletteColorLookupTableData
-0028   1203   XS   1-n    BluePaletteColorLookupTableData
+0028   1200   US/SS   1-n    GrayLookupTableData
+0028   1201   US/SS   1-n    RedPaletteColorLookupTableData
+0028   1202   US/SS   1-n    GreenPaletteColorLookupTableData
+0028   1203   US/SS   1-n    BluePaletteColorLookupTableData
 0028   1211   OW   1      LargeRedPaletteColorLookupTableData
 0028   1212   OW   1      LargeGreenPaletteColorLookupTableData
 0028   1213   OW   1      LargeBluePaletteColorLookupTableData
@@ -727,10 +727,10 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 0028   2110   CS   1      LossyImageCompression
 0028   2112   DS   1-n    LossyImageCompressionRatio
 0028   3000   SQ   1      ModalityLUTSequence
-0028   3002   XS   3      LUTDescriptor
+0028   3002   US/SS   3      LUTDescriptor
 0028   3003   LO   1      LUTExplanation
 0028   3004   LO   1      ModalityLUTType
-0028   3006   XS   1-n    LUTData
+0028   3006   US/SS   1-n    LUTData
 0028   3010   SQ   1      VOILUTSequence
 0028   3110   SQ   1      SoftcopyVOILUTSequence
 0028   4000   LT   1-n    ImagePresentationComments
@@ -1701,12 +1701,12 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 5000   200E   LT   1      AudioComments
 5000   3000   OX   1      CurveData
 5400   0100   SQ   1      WaveformSequence
-5400   0110   OW/OB 1      ChannelMinimumValue
-5400   0112   OW/OB 1      ChannelMaximumValue
+5400   0110   OX   1      ChannelMinimumValue
+5400   0112   OX   1      ChannelMaximumValue
 5400   1004   US   1      WaveformBitsAllocated
 5400   1006   CS   1      WaveformSampleInterpretation
-5400   100A   OW/OB 1      WaveformPaddingValue
-5400   1010   OW/OB 1      WaveformData
+5400   100A   OX   1      WaveformPaddingValue
+5400   1010   OX   1      WaveformData
 6000   0000   UL   1      OverlayGroupLength
 6000   0010   US   1      OverlayRows
 6000   0011   US   1      OverlayColumns
@@ -1751,7 +1751,7 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 7F00   0030   OW   1-n    VariableCoefficientsSDHN
 7F00   0040   OW   1-n    VariableCoefficientsSDDN
 7FE0   0000   UL   1      PixelDataGroupLength
-7FE0   0010   OX   1      PixelData
+7FE0   0010   OB   1      PixelData
 7FE0   0020   OW   1-n    CoefficientsSDVN
 7FE0   0030   OW   1-n    CoefficientsSDHN
 7FE0   0040   OW   1-n    CoefficientsSDDN
@@ -1913,7 +1913,7 @@ END_DICOM_FIELDS
 #  60xx   1302   DS   1      ROIMean
 #  60xx   1303   DS   1      ROIStandardDeviation
 #  60xx   1500   LO   1      OverlayLabel
-#  60xx   3000   OW/OB 1      OverlayData
+#  60xx   3000   OX   1      OverlayData
 #  60xx   4000   LT   1-n    OverlayComments
 #  7Fxx   0000   UL   1      VariablePixelDataGroupLength
 #  7Fxx   0010   OW   1      VariablePixelData

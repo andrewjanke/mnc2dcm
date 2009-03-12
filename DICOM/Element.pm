@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.5 2009/03/10 10:05:20 rotor Exp $
+# $Id: Element.pm,v 1.6 2009/03/12 02:46:24 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -21,7 +21,7 @@ use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -344,37 +344,66 @@ sub valueString {
 # immutable field 'header' - write this to disk then value field.
 
 sub write {
-  my ($this, $OUTFILE) = @_;
-  my %hash = %$this;
-  my ($gp, $el, $offs, $code, $len, $name, $valstr) = $this->values();
-  my ($hdr, $val) = @hash{qw(header value)};
-
-  if ($gp eq '0002') {
-  printf "Writing $code $gp:$el ($name/$len) : [$val]\n";
-  }
+   my ($this, $OUTFILE) = @_;
+   
+   my($genhdr);
+   
+   if ($this->{'group'} eq '0002') {
+      printf "Writing [$this->{'group'}][$this->{'element'}][$this->{'code'}" .
+         ":$this->{'length'}] [$this->{'value'}]\n";
+      }
   
-  # build the output header
-  my $genhdr = pack('vvaaL', 
-     $gp, $el, 
-     substr($code, 0, 1), 
-     substr($code, 1, 1), 
-     $len); 
+   # build the output header
+   if($this->{'code'} eq 'OB' || $this->{'code'} eq 'OW' ||
+      $this->{'code'} eq 'SQ' || $this->{'code'} eq 'UN' ||
+      $this->{'code'} eq 'UT'){
+      
+      # header has an extra 16 reserved bytes after VR
+      # 
+      # group   | element | VR      | reserved | VL      | value    |
+      # 2 bytes | 2 bytes | 2 bytes | 2 bytes  | 4 bytes | VL bytes |
+      
+      $genhdr = pack('SSa2vV', 
+         $this->{'group'}, 
+         $this->{'element'}, 
+         $this->{'code'},
+         0,
+         $this->{'length'});
+      
+      # write it out
+      syswrite($OUTFILE, $genhdr, 12);
+      }
+   
+   else{
+      # header format
+      # 
+      # group   | element | VR      | VL      | value    |
+      # 2 bytes | 2 bytes | 2 bytes | 2 bytes | VL bytes |
+      
+      $genhdr = pack('SSa2v', 
+         $this->{'group'}, 
+         $this->{'element'}, 
+         $this->{'code'},
+         $this->{'length'});
+      
+      # write it out
+      syswrite($OUTFILE, $genhdr, 8);
+      }
+   
+   #SWITCH: {
+   #   if($code eq "UL"){ $this->writeInt($OUTFILE, $INT);      last SWITCH; }
+   #   if($code eq "US"){ $this->writeInt($OUTFILE, $SHORT);    last SWITCH; }
+   #   if($code eq "FD"){ $this->writeFloat($OUTFILE, $DOUBLE); last SWITCH; }
+   #   if($code eq "FL"){ $this->writeFloat($OUTFILE, $FLOAT);  last SWITCH; }
   
-  print $OUTFILE $genhdr;
- SWITCH: {
-   if($code eq "UL"){ $this->writeInt($OUTFILE, $INT);      last SWITCH; }
-   if($code eq "US"){ $this->writeInt($OUTFILE, $SHORT);    last SWITCH; }
-   if($code eq "FD"){ $this->writeFloat($OUTFILE, $DOUBLE); last SWITCH; }
-   if($code eq "FL"){ $this->writeFloat($OUTFILE, $FLOAT);  last SWITCH; }
-  
-  # Trim value to length (may have been edited), null pad if necessary.
-#    $val = substr($val, 0, $len);
-  foreach my $i (1..($len - length($val))) {
-    $val = "$val\0";
-  }
-  print $OUTFILE $val;
-  }
-}
+   # null pad if necessary.
+   #foreach my $i (1..($len - length($val))){
+   #   $val = "$val\0";
+   #   }
+   
+   # write the value itself
+   syswrite($OUTFILE, $this->{'value'}, $this->{'length'});
+   }
 
 sub value {
   my $this = shift;
@@ -384,44 +413,62 @@ sub value {
 
 # Set the value field of this element.  Truncates to max length.
 sub setValue {
-  my $this = shift;
-  my $code = $this->{'code'};
-  my ($value) = @_;
+   my $this = shift;
+   my ($value) = @_;
+   
+   my $pack_code = $DICOM::VRfields::VR{$this->{'code'}}[5];
+   my $numeric = $DICOM::VRfields::VR{$this->{'code'}}[4];
+   my $max_len = $DICOM::VRfields::VR{$this->{'code'}}[1];
+   
+   my $pack_string;
+   
+      # set the length if fixed
+   if($DICOM::VRfields::VR{$this->{'code'}}[2] == 1){
+      $this->{'length'} = $DICOM::VRfields::VR{$this->{'code'}}[1];
+      
+      $pack_string = $pack_code;
+      }
+   
+   # else figure out the size
+   else{
+      my($nelem, $length);
+      
+      if($numeric){
+         # sizeof array
+         $nelem = 1;
+         }
+      else{
+         $nelem = length($value);
+         }
+      
+      $length = length(pack($pack_code, 0)) * $nelem;
+      $pack_string = "${pack_code}${nelem}";
+      
+      if($max_len != 0 && $length > $max_len){
+         warn "[" . $this->{'group'} . "][" . $this->{'element'} . 
+            "] is too big ($length) should be ($max_len)\n";
+         }
+      
+      $this->{'length'} = $length;
+      }
+   
+   print "Setting [" . $this->{'group'} . "][" . $this->{'element'} . 
+      "]-[" . $this->{'code'} . ":" . $this->{'length'} . 
+      "] $numeric ($pack_code:$pack_string) -$value-\n";
+   
+   # Set the data value
+   if($pack_code eq ''){
+      $this->{'value'} = $value;
+      print "as is - $pack_code - ";
+      }
+   else{
+      $this->{'value'} = pack($pack_string, $value);
+      print "pack - $pack_code - ";
+      }
+   
+   print "Set value to -" . $this->{'value'} . "-\n";
+   }
 
-  # If the field has a variable length, first adjust it.
-  SWITCH: {
-    if ($code eq "OB" or $code eq "OW" or $code eq "OF" or $code eq "SQ"
-              or $code eq "UT" or $code eq "UN") {
-      # XXX This is not binary safe!
-
-      my $len = length $value;
-
-      my @hdr = unpack "nnnnN", $this->{'header'};
-      $hdr[4] = $len;
-      $this->{'length'} = $len;
-      $this->{'header'} = pack "nnnnV", @hdr;
-
-      last SWITCH;
-    }
-    if ($code eq "IS") { $this->fix_length(12, $value); last SWITCH; }
-    if ($code eq "LO") { $this->fix_length(64, $value); last SWITCH; }
-    if ($code eq "DT") { $this->fix_length(26, $value); last SWITCH; }
-    if ($code eq "DS") { $this->fix_length(16, $value); last SWITCH; }
-    if ($code eq "CS") { $this->fix_length(16, $value); last SWITCH; }
-    if ($code eq "AE") { $this->fix_length(16, $value); last SWITCH; }
-    if ($code eq "LT") { $this->fix_length(10240, $value); last SWITCH; }
-    if ($code eq "PN") { $this->fix_length(64, $value); last SWITCH; }
-    if ($code eq "SH") { $this->fix_length(16, $value); last SWITCH; }
-    if ($code eq "ST") { $this->fix_length(1024, $value); last SWITCH; }
-    if ($code eq "TM") { $this->fix_length(16, $value); last SWITCH; }
-    if ($code eq "UI") { $this->fix_length(64, $value); last SWITCH; }
-  }
-
-  print "Setting value of $value for " . $this->{'group'} . "  " . $this->{'element'} . "\n";
-
-  $value = substr($value, 0, $this->{'length'});
-  $this->{'value'} = $value;
-}
 
 sub byteswap {
     my ($valref) = @_;

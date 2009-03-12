@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.5 2009/03/10 10:05:20 rotor Exp $
+# $Id: DICOM.pm,v 1.6 2009/03/12 02:46:24 rotor Exp $
 
 package DICOM;
 
@@ -16,7 +16,7 @@ use DICOM::Fields qw/@dicom_fields/;   # Standard header definitions.
 use DICOM::VRfields; # Field data types
 use DICOM::Private;  # Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;    # Field to sort by.
@@ -115,26 +115,19 @@ sub create_element {
    $elem->{'element'} = $el;
 
    # get the element type and name from the data dictionary
-   $elem->{'code'} = @{$dicom_dict{$gr}{$el}}[0];
-   $elem->{'name'} = $DICOM::Fields::dicom_dict{$gr}{$el}[2];
-   
-   print "DICT $gr $el: " . $dicom_dict{$gr}{$el}[0] . " END\n";
+   $elem->{'code'} = $dicom_dict{$gr}{$el}[0];
+   $elem->{'name'} = $dicom_dict{$gr}{$el}[2];
    
    # set the offset to zero (we dont use it anyhow)
    $elem->{'offset'} = 0;
    
    # set the initial length
    if($DICOM::VRfields::VR{$elem->{'code'}}[2] == 1){
-      
       $elem->{'length'} = $DICOM::VRfields::VR{$elem->{'code'}}[1];
-      print "Fixed element[$elem->{'code'}] - $elem->{'length'}\n";
       }
    else{
-      print "Variable size[$elem->{'code'}]\n";
-      
       $elem->{'length'} = 0;
       }
-   
    
    # set the value
    $elem->setValue($val);
