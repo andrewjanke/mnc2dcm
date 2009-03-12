@@ -99,7 +99,7 @@ print STDOUT "+ Reshaping $infile to zyx +dir\n";
 my $d = DICOM->new();
 
 
-# Dicom things (0002 group)
+# Dicom things (0x0002 group)
 # MetaElementGroupLength
 $d->create_element(0x0002, 0x0000, 0);
 
@@ -125,14 +125,14 @@ $d->create_element(0x0002, 0x0013, 'NOTSPECIFIED');
 # SourceApplicationEntityTitle
 $d->create_element(0x0002, 0x0016, 'NOTSPECIFIED');
 
-# calc group size
+# calc group size and set it
 $size = &calc_size($d);
 $d->{0x0002}{0x0000}->setValue($size);
-print STDOUT "Total size: $size\n";
 
-# (0008 group)
+
+# (0x0008 group)
 # SpecificCharacterSet
-$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
+#$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
 # ImageType
 $d->create_element(0x0008, 0x0008, 'DERIVED');
@@ -204,7 +204,7 @@ $d->create_element(0x0008, 0x103E, 'Unknown');
 $d->create_element(0x0008, 0x2111, 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
 
 
-# (0010 group)
+# (0x0010 group)
 # Patient Name, ID, BirthDate, Sex
 $d->create_element(0x0010, 0x0010, "JOHN^DOE");
 $d->create_element(0x0010, 0x0020, "PatientID");
@@ -254,6 +254,7 @@ $d->create_element(0x0028, 0x0100, 16);
 $d->create_element(0x0028, 0x0101, 16);
 $d->create_element(0x0028, 0x0102, 15);
 
+
 # first create the required elements (setting to null and/or 0)
 # ImageNumber
 $d->create_element(0x0020, 0x0013, 0);
@@ -268,33 +269,31 @@ $d->create_element(0x0020, 0x0032, "0\\0\\0");
 $d->create_element(0x7FE0, 0x0010, 0);
 
 # for each slice
-#foreach $s (0..($zsize-1)){
-$s=0;
-{
-   my(@pos);
-
-   $outfile = "$outdir/$s.dcm";
-
+foreach $s (0..($zsize-1)){
+   my(@pos, $s_txt);
+   
    print STDOUT "  | Working on slice $s\n";
-
+   
+   $s_txt = sprintf("%05d", $s);
+   $outfile = "$outdir/$s_txt.dcm";
+   
    # set the image number
    $d->{0x0020}{0x0013}->setValue($s);
-
+   
    # ImagePositionPatient
    $args = "voxeltoworld $opt{'tmpdir'}/res.mnc " .
            $s . ' ' . (($ysize-1)/2) . ' ' . (($zsize-1)/2);
    chomp($buf = `$args`);
-   $buf =~ s/\ /\\/g;
-   print "BUF = $buf\n";
-   
-
-   $d->{0x0020}{0x0032}->setValue($buf);
+   (@pos) = split(/\ /, $buf);
+   $d->{0x0020}{0x0032}->setValue(sprintf("%.15g\\%.15g\\%.15g", 
+      $pos[0], $pos[1], $pos[2]));
 
    # get and set the slice
-   $data = `mincextract -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
-   #$d->{0x7FE0}{0x0010}->{'length'} = 2 * $xsize * $ysize;
-   $d->{0x7FE0}{0x0010}->setValue($data);
-
+   $data = `mincextract -unsigned -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
+   
+   $d->{0x7FE0}{0x0010}->{'length'} = $xsize * $ysize * 2;
+   $d->{0x7FE0}{0x0010}->{'value'} = $data;
+   
    # write this slice out
    $d->write($outfile);
    }
@@ -332,7 +331,6 @@ sub calc_size {
    $size = 0;
    foreach $el (keys(%{$hash{$gp}})){
       $size += $hash{$gp}{$el}->{'length'};
-      print STDOUT "SIZE: ($gp,$el) " . $hash{$gp}{$el}->{'length'} . "    $size " . $hash{$gp}{$el}->{'value'} . "\n";
       }
 
    return $size;

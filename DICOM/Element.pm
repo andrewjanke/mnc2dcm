@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.8 2009/03/12 14:11:39 rotor Exp $
+# $Id: Element.pm,v 1.9 2009/03/12 14:55:43 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -21,7 +21,7 @@ use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.8 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.9 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -468,11 +468,18 @@ sub setValue {
       $this->{'length'} = $length;
       }
    
+   
+   print "Setting [" . sprintf("%04X", $this->{'group'}) . "][" . 
+      sprintf("%04X", $this->{'element'}) . "]-[" . 
+      $this->{'code'} . ":" . $this->{'length'} . 
+      "] $numeric ($pack_code:$pack_string) -";
+      
+      
    if($this->{'length'} < 200){
-      print "Setting [" . sprintf("%04X", $this->{'group'}) . "][" . 
-         sprintf("%04X", $this->{'element'}) . "]-[" . 
-         $this->{'code'} . ":" . $this->{'length'} . 
-         "] $numeric ($pack_code:$pack_string) -$value-\n";
+      print "$value-\n";
+      }
+   else{
+      print "\n";
       }
    
    # Set the data value
