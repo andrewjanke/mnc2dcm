@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.9 2009/03/12 14:55:43 rotor Exp $
+# $Id: Element.pm,v 1.10 2009/03/12 20:37:56 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -21,7 +21,7 @@ use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.9 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.10 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -434,8 +434,20 @@ sub setValue {
       my($nelem, $length);
       
       if($numeric){
-         # sizeof array
-         $nelem = 1;
+         
+         # if an array..
+         if($value =~ m/\\/){
+            my @tmp = split(/\\/, $value);
+            $nelem = $#tmp;
+            
+            print "Found $nelem things -- $value\n";
+            }
+         
+         # else just one element
+         else{
+            $nelem = 1;
+            print "Found $nelem things -- $value\n";
+            }
          }
       else{
          # if length is odd, pad

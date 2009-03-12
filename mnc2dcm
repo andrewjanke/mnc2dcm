@@ -291,7 +291,7 @@ $y_dircos =~ s/\ /\\/g;
 $d->create_element(0x0020, 0x0037, $x_dircos . '\\' . $y_dircos);
 
 # SliceVector
-#$d->create_element(0x0054, 0x0081, $zsize);
+$d->create_element(0x0054, 0x0080, join('\\', 0..($zsize-1)));
 
 # NumberOfSlices
 $d->create_element(0x0054, 0x0081, $zsize);
