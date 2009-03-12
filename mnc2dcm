@@ -135,7 +135,7 @@ $d->{0x0002}{0x0000}->setValue($size);
 #$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
 # ImageType
-$d->create_element(0x0008, 0x0008, 'DERIVED');
+$d->create_element(0x0008, 0x0008, 'DERIVED\SECONDARY');
 
 # InstanceCreationDate
 $d->create_element(0x0008, 0x0012, '20090303');
@@ -224,6 +224,11 @@ $d->create_element(0x0020, 0x0010, 1);
 $d->create_element(0x0020, 0x0011, 1);
 $d->create_element(0x0020, 0x0012, 1);
 
+# ImageOrientation
+$d->create_element(0x0020, 0x0035, 1);
+
+# ImageOrientationPatient
+#$d->create_element(0x0020, 0x0037, 1);
 
 # Get sizes
 @args = ('mincinfo',
@@ -235,6 +240,10 @@ $d->create_element(0x0020, 0x0012, 1);
 $args = join(' ', @args);
 @data = split(/\n/, `$args`);
 ($xsize, $ysize, $zsize) = @data[0..2];
+
+# ImagesInAcquisition
+$d->create_element(0x0020, 0x1002, $zsize);
+
 
 # set columns and rows
 $d->create_element(0x0028, 0x0010, $xsize);
@@ -259,11 +268,33 @@ $d->create_element(0x0028, 0x0102, 15);
 # ImageNumber
 $d->create_element(0x0020, 0x0013, 0);
 
-# ImagePosition
-$d->create_element(0x0020, 0x0030, "0\\0\\0");
+# SliceThickness
+# Nominal slice thickness, in mm.
+chomp($z_thick = `mincinfo -attvalue zspace:step $infile`);
+$d->create_element(0x0018, 0x0050, $z_thick * 1);
 
 # ImagePositionPatient
+# The x, y, and z coordinates of the upper
+# left hand corner (center of the first voxel
+# transmitted) of the image, in mm.
 $d->create_element(0x0020, 0x0032, "0\\0\\0");
+
+# ImageOrientationPatient
+# The direction cosines of the first row and
+# the first column with respect to the patient.
+chomp($x_dircos = `mincinfo -attvalue xspace:direction_cosines $infile`);
+chomp($y_dircos = `mincinfo -attvalue yspace:direction_cosines $infile`);
+$x_dircos =~ s/\ $//g;
+$x_dircos =~ s/\ $//g;
+$x_dircos =~ s/\ /\\/g;
+$y_dircos =~ s/\ /\\/g;
+$d->create_element(0x0020, 0x0037, $x_dircos . '\\' . $y_dircos);
+
+# SliceVector
+#$d->create_element(0x0054, 0x0081, $zsize);
+
+# NumberOfSlices
+$d->create_element(0x0054, 0x0081, $zsize);
 
 # PixelData
 $d->create_element(0x7FE0, 0x0010, 0);
@@ -282,7 +313,7 @@ foreach $s (0..($zsize-1)){
    
    # ImagePositionPatient
    $args = "voxeltoworld $opt{'tmpdir'}/res.mnc " .
-           $s . ' ' . (($ysize-1)/2) . ' ' . (($zsize-1)/2);
+           0 . ' ' . ($ysize-1) . ' ' . $s;
    chomp($buf = `$args`);
    (@pos) = split(/\ /, $buf);
    $d->{0x0020}{0x0032}->setValue(sprintf("%.15g\\%.15g\\%.15g", 
