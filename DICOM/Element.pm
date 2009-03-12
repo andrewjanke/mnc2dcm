@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.6 2009/03/12 02:46:24 rotor Exp $
+# $Id: Element.pm,v 1.7 2009/03/12 11:09:03 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -21,7 +21,7 @@ use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.7 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -363,7 +363,7 @@ sub write {
       # group   | element | VR      | reserved | VL      | value    |
       # 2 bytes | 2 bytes | 2 bytes | 2 bytes  | 4 bytes | VL bytes |
       
-      $genhdr = pack('SSa2vV', 
+      $genhdr = pack('SSa2SL', 
          $this->{'group'}, 
          $this->{'element'}, 
          $this->{'code'},
@@ -380,7 +380,7 @@ sub write {
       # group   | element | VR      | VL      | value    |
       # 2 bytes | 2 bytes | 2 bytes | 2 bytes | VL bytes |
       
-      $genhdr = pack('SSa2v', 
+      $genhdr = pack('SSa2S', 
          $this->{'group'}, 
          $this->{'element'}, 
          $this->{'code'},
@@ -438,11 +438,21 @@ sub setValue {
          $nelem = 1;
          }
       else{
+         # if length is odd, pad with spaces
+         if((length($value) % 2) == 1){
+            $value .= ' ';
+            }
+         
          $nelem = length($value);
          }
       
       $length = length(pack($pack_code, 0)) * $nelem;
       $pack_string = "${pack_code}${nelem}";
+      
+      # sanity check
+      if(($length % 2) == 1){
+         warn "$value is not even .($length)\n";
+         }
       
       if($max_len != 0 && $length > $max_len){
          warn "[" . $this->{'group'} . "][" . $this->{'element'} . 
@@ -452,9 +462,11 @@ sub setValue {
       $this->{'length'} = $length;
       }
    
-   print "Setting [" . $this->{'group'} . "][" . $this->{'element'} . 
-      "]-[" . $this->{'code'} . ":" . $this->{'length'} . 
-      "] $numeric ($pack_code:$pack_string) -$value-\n";
+   if($this->{'length'} < 200){
+      print "Setting [" . $this->{'group'} . "][" . $this->{'element'} . 
+         "]-[" . $this->{'code'} . ":" . $this->{'length'} . 
+         "] $numeric ($pack_code:$pack_string) -$value-\n";
+      }
    
    # Set the data value
    if($pack_code eq ''){

@@ -4,7 +4,7 @@
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 # Perl module to read DICOM headers.
 # TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.6 2009/03/12 02:46:24 rotor Exp $
+# $Id: DICOM.pm,v 1.7 2009/03/12 11:09:03 rotor Exp $
 
 package DICOM;
 
@@ -16,7 +16,7 @@ use DICOM::Fields qw/@dicom_fields/;   # Standard header definitions.
 use DICOM::VRfields; # Field data types
 use DICOM::Private;  # Private or custom definitions.
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.7 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;    # Field to sort by.
@@ -42,7 +42,7 @@ BEGIN {
    
    foreach $line (@dicom_fields, @dicom_private){
       ($group, $element, $vr, $size, $name) = split(/\s+/, $line);
-      $dicom_dict{$group}{$element} = [($vr, $size, $name)];
+      $dicom_dict{hex($group)}{hex($element)} = [($vr, $size, $name)];
       }
    
    print "DICOM::Fields - built data dictionary\n";

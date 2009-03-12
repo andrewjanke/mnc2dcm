@@ -101,128 +101,127 @@ my $d = DICOM->new();
 
 # Dicom things (0002 group)
 # MetaElementGroupLength
-$d->create_element('0002', '0000', 0);
+$d->create_element(0x0002, 0x0000, 0);
 
 # FileMetaInformationVersion
-$d->create_element('0002', '0001', "\002\000");
+$d->create_element(0x0002, 0x0001, 0x020x00);
 
 # MediaStorageSOPClassUID
-$d->create_element('0002', '0002', '1.2.840.10008.5.1.4.1.1.20');
+$d->create_element(0x0002, 0x0002, '1.2.840.10008.5.1.4.1.1.20');
 
 # MediaStorageSOPInstanceUID
-$d->create_element('0002', '0003', '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+$d->create_element(0x0002, 0x0003, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
 
 # TransferSyntaxUID - explicit VR little
-$d->create_element('0002', '0010', '1.2.840.10008.1.2.1');
+$d->create_element(0x0002, 0x0010, '1.2.840.10008.1.2.1');
 
 # ImplementationClassUID
-$d->create_element('0002', '0012', '0.0.0.0');
+$d->create_element(0x0002, 0x0012, '0.0.0.0');
 
 # ImplementationVersionName
-$d->create_element('0002', '0013', 'NOTSPECIFIED');
+$d->create_element(0x0002, 0x0013, 'NOTSPECIFIED');
 
 # SourceApplicationEntityTitle
-$d->create_element('0002', '0016', 'NOTSPECIFIED');
+$d->create_element(0x0002, 0x0016, 'NOTSPECIFIED');
 
 # calc group size
 $size = &calc_size($d);
-$size = 198;
-$d->{'0002'}{'0000'}->setValue($size);
+$d->{0x0002}{0x0000}->setValue($size);
 print STDOUT "Total size: $size\n";
 
 # (0008 group)
 # SpecificCharacterSet
-$d->create_element('0008', '0005', 'ISO_IR 100');
+$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
 # ImageType
-$d->create_element('0008', '0008', 'DERIVED\PRIMARY\RECON TOMO\EMISSION');
+$d->create_element(0x0008, 0x0008, 'DERIVED\PRIMARY\RECON TOMO\EMISSION');
 
 # InstanceCreationDate
-$d->create_element('0008', '0012', '20090303');
+$d->create_element(0x0008, 0x0012, '20090303');
 
 # InstanceCreationTime
-$d->create_element('0008', '0013', '224555');
+$d->create_element(0x0008, 0x0013, '224555');
 
 # InstanceCreatorUID
-$d->create_element('0008', '0014', '777.777.0.0.0');
+$d->create_element(0x0008, 0x0014, '777.777.0.0.0');
 
 # SOPClassUID
-$d->create_element('0008', '0016', '1.2.840.10008.5.1.4.1.1.20');
+$d->create_element(0x0008, 0x0016, '1.2.840.10008.5.1.4.1.1.20');
 
 # SOPInstanceUID
-$d->create_element('0008', '0018', '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
+$d->create_element(0x0008, 0x0018, '777.777.0.0.0.1236080755.2932837459.1440010230.3400850238');
 
 # StudyDate
-$d->create_element('0008', '0020', '20081210');
+$d->create_element(0x0008, 0x0020, '20081210');
 
 # SeriesDate
-$d->create_element('0008', '0021', '20081210');
+$d->create_element(0x0008, 0x0021, '20081210');
 
 # AcquisitionDate
-$d->create_element('0008', '0022', '20081210');
+$d->create_element(0x0008, 0x0022, '20081210');
 
 # ImageDate
-$d->create_element('0008', '0023', '20081210');
+$d->create_element(0x0008, 0x0023, '20081210');
 
 # StudyTime
-$d->create_element('0008', '0030', '1200');
+$d->create_element(0x0008, 0x0030, '1200');
 
 # SeriesTime
-$d->create_element('0008', '0031', '1200');
+$d->create_element(0x0008, 0x0031, '1200');
 
 # AcquisitionTime
-$d->create_element('0008', '0032', '1200');
+$d->create_element(0x0008, 0x0032, '1200');
 
 # ImageTime
-$d->create_element('0008', '0033', '1200');
+$d->create_element(0x0008, 0x0033, '1200');
 
 # AccessionNumber
-$d->create_element('0008', '0050', '1');
+$d->create_element(0x0008, 0x0050, '1');
 
 # Modality
-$d->create_element('0008', '0060', 'NM');
+$d->create_element(0x0008, 0x0060, 'NM');
 
 # Manufacturer
-$d->create_element('0008', '0070', 'minc');
+$d->create_element(0x0008, 0x0070, 'minc');
 
 # InstitutionName
-$d->create_element('0008', '0080', 'Unknown');
+$d->create_element(0x0008, 0x0080, 'Unknown');
 
 # ReferringPhysicianName
-$d->create_element('0008', '0090', 'Unknown^^^^');
+$d->create_element(0x0008, 0x0090, 'Unknown^^^^');
 
 # StudyDescription
-$d->create_element('0008', '1030', 'mnc2dcm infile outfile');
+$d->create_element(0x0008, 0x1030, 'mnc2dcm infile outfile');
 
 # SeriesDescription
-$d->create_element('0008', '103E', 'Unknown');
+$d->create_element(0x0008, 0x103E, 'Unknown');
 
 # OperatorName
-$d->create_element('0008', '1070', 'Unknown');
+$d->create_element(0x0008, 0x1070, 'Unknown');
 
 # DerivationDescription
-$d->create_element('0008', '2111', 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
+$d->create_element(0x0008, 0x2111, 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
 
 
 # (0010 group)
 # Patient Name, ID, BirthDate, Sex
-$d->create_element('0010', '0010', "JOHN^DOE");
-$d->create_element('0010', '0020', "PatientID");
-$d->create_element('0010', '0030', "19990101");
-$d->create_element('0010', '0040', "M");
+$d->create_element(0x0010, 0x0010, "JOHN^DOE");
+$d->create_element(0x0010, 0x0020, "PatientID");
+$d->create_element(0x0010, 0x0030, "19990101");
+$d->create_element(0x0010, 0x0040, "M");
 
 
 # Sequence name
-$d->create_element('0018', '1030', "fMRI-test");
+$d->create_element(0x0018, 0x1030, "fMRI-test");
 
 
 # Image Comment
-$d->create_element('0020', '4000', "Created by $me ($VERSION)");
+$d->create_element(0x0020, 0x4000, "Created by $me ($VERSION)");
 
 # StudyID, SeriesNumber, AcquisitionNumber
-$d->create_element('0020', '0010', 1);
-$d->create_element('0020', '0011', 1);
-$d->create_element('0020', '0012', 1);
+$d->create_element(0x0020, 0x0010, 1);
+$d->create_element(0x0020, 0x0011, 1);
+$d->create_element(0x0020, 0x0012, 1);
 
 
 # Get sizes
@@ -237,37 +236,37 @@ $args = join(' ', @args);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
 # set columns and rows
-$d->create_element('0028', '0010', $xsize);
-$d->create_element('0028', '0011', $ysize);
+$d->create_element(0x0028, 0x0010, $xsize);
+$d->create_element(0x0028, 0x0011, $ysize);
 
 # PixelSpacing
-$d->create_element('0028', '0030', "1.0\\1.0");
+$d->create_element(0x0028, 0x0030, "1.0\\1.0");
 
 
 # SamplesPerPixel
-$d->create_element('0028', '0002', 1);
+$d->create_element(0x0028, 0x0002, 1);
 
 # PixelRepresentation
-$d->create_element('0028', '0103', 0);
+$d->create_element(0x0028, 0x0103, 0);
 
 # BitsAllocated, BitsStored, HighBit
-$d->create_element('0028', '0100', 16);
-$d->create_element('0028', '0101', 16);
-$d->create_element('0028', '0102', 15);
+$d->create_element(0x0028, 0x0100, 16);
+$d->create_element(0x0028, 0x0101, 16);
+$d->create_element(0x0028, 0x0102, 15);
 
 
 # first create the required elements (setting to null and/or 0)
 # ImageNumber
-$d->create_element('0020', '0013', 0);
+$d->create_element(0x0020, 0x0013, 0);
 
 # ImagePosition
-$d->create_element('0020', '0030', 0);
+$d->create_element(0x0020, 0x0030, 0);
 
 # ImagePositionPatient
-$d->create_element('0020', '0032', 0);
+$d->create_element(0x0020, 0x0032, 0);
 
 # PixelData
-$d->create_element('7FE0', '0010', 0);
+$d->create_element(0x7FE0, 0x0010, 0);
 
 # for each slice
 #foreach $s (0..($zsize-1)){
@@ -279,7 +278,7 @@ $s=0;
    print STDOUT "  | Working on slice $s\n";
 
    # set the image number
-   $d->{'0020'}{'0013'}->setValue($s);
+   $d->{0x0020}{0x0013}->setValue($s);
 
    # ImagePositionPatient
    $args = "voxeltoworld $opt{'tmpdir'}/res.mnc $s " .
@@ -290,12 +289,12 @@ $s=0;
    $buf =~ s/\ /\,\ /g;
 
   # print "BUF = $buf\n\n";
-  # $d->setElementValue('0020', '0032', $buf);
+  # $d->setElementValue(0x0020, 0x0032, $buf);
 
    # get and set the slice
    $data = `mincextract -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
-   $d->{'7FE0'}{'0010'}->{'length'} = 2 * $xsize * $ysize;
-   #$d->{'7FE0'}{'0010'}->{'value'} = $data;
+   #$d->{0x7FE0}{0x0010}->{'length'} = 2 * $xsize * $ysize;
+   $d->{0x7FE0}{0x0010}->setValue($data);
 
    # write this slice out
    $d->write($outfile);
