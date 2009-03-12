@@ -1,7 +1,7 @@
 # Element.pm ver 0.3
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.10 2009/03/12 20:37:56 rotor Exp $
+# $Id: Element.pm,v 1.11 2009/03/12 22:35:51 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -16,12 +16,12 @@
 package DICOM::Element;
 
 use strict;
-use DICOM::VRfields qw/%VR/;
+use DICOM::VR qw/%VR/;
 use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.10 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.11 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -29,28 +29,14 @@ my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
 my @fieldnames = qw(group element offset code length name value header);
 my $big_endian_machine = unpack("h*", pack("s", 1)) =~ /01/;
 
-# Initialize VR hash only once.
-#BEGIN {
-#   foreach my $vr (sort keys(%DICOM::VRfields::VR)){
-#           
-#      my ($name, $length, $fixed, $numeric, $byteswap) = 
-#         @{$DICOM::VRfields::VR{$vr}};
-#      
-#      
-#      print "[VR:$vr] : $name, $length, $fixed, $numeric, $byteswap\n";
-#      }
-#   }
-   
-
-sub new {
-  my $type = shift;
-  my $self = {};
-  return bless $self, $type;
-}
+sub new{
+   my $type = shift;
+   my $self = {};
+   return bless $self, $type;
+   }
 
 # Fill in self from file.
-
-sub fill {
+sub fill{
   my $this = shift;
   my ($IN, $dictref, $big_endian_image, $parent) = @_;
   my %dict = %$dictref;
@@ -416,15 +402,15 @@ sub setValue {
    my $this = shift;
    my ($value) = @_;
    
-   my $pack_code = $DICOM::VRfields::VR{$this->{'code'}}[5];
-   my $numeric = $DICOM::VRfields::VR{$this->{'code'}}[4];
-   my $max_len = $DICOM::VRfields::VR{$this->{'code'}}[1];
+   my $pack_code = $DICOM::VR::VR{$this->{'code'}}[5];
+   my $numeric = $DICOM::VR::VR{$this->{'code'}}[4];
+   my $max_len = $DICOM::VR::VR{$this->{'code'}}[1];
    
    my $pack_string;
    
       # set the length if fixed
-   if($DICOM::VRfields::VR{$this->{'code'}}[2] == 1){
-      $this->{'length'} = $DICOM::VRfields::VR{$this->{'code'}}[1];
+   if($DICOM::VR::VR{$this->{'code'}}[2] == 1){
+      $this->{'length'} = $DICOM::VR::VR{$this->{'code'}}[1];
       
       $pack_string = $pack_code;
       }

@@ -1,25 +1,31 @@
-# VRfields.pm
+# DICOM::VR.pm - Definition of DICOM VR's 
+#
 # Andrew Crabb (ahc@jhu.edu), May 2002.
-# $Id: VRfields.pm,v 1.5 2009/03/12 14:11:39 rotor Exp $
+# Andrew Janke (a.janke@gmail.com), March 2009
+# $Id: VR.pm,v 1.1 2009/03/12 22:35:51 rotor Exp $
 
-package DICOM::VRfields;
+package DICOM::VR;
 
 use strict;
-use vars qw(@ISA @EXPORT $VERSION %VR);
-
+use warnings;
 require Exporter;
 
-@ISA = qw(Exporter);
-@EXPORT = qw(%VR);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(%VR);
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.1 $ =~ /: (\d+)\.(\d+)/;
 
 # Value Representations (DICOM Standard PS 3.5 Sect 6.2)
-# Bytes=0 => Undefined length.
-# Fixed=1 => Exact field length, otherwise max length.
+# Code     2 character DICOM VR
+# Name     Descriptive name
+# MaxSize  Maximum number of bytes per element
+#             0 for undefined length
+# Fixed     1 is the VR has a fixed size
+# Numeric   1 if the VR is numeric only
+# ByteSwap  1 if the field needs swapping
+# Pack      Perl pack() code to use
 #
-#  Code     Name         MaxBytes Fixed Numeric ByteSwap Pack
-
-%VR = (
+#  Code     Name           MaxSize Fixed Numeric ByteSwap Pack
+our %VR = (
    'AE' => ['Application Entity',         16,  0,  0,  0, 'a' ],
    'AS' => ['Age String',                  4,  1,  0,  0, 'a4'],
    'AT' => ['Attribute Tag',               4,  1,  0,  1, 'v2'],
@@ -35,11 +41,12 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
    'OB' => ['Other Byte String',           0,  0,  0,  0, 'C' ],
    'OF' => ['Other Float String',          0,  0,  0,  1, 'f' ],
    'OW' => ['Other Word String',           0,  0,  0,  1, 'v' ],
-   'OX' => ['Binary Stream',               0,  0,  0,  1, '' ],
+#  'OT' => ['UNKNOWN',                     0,  0,  0,  0, ''  ],
+   'OX' => ['Binary Stream',               0,  0,  0,  1, ''  ],
    'PN' => ['Person Name',                64,  0,  0,  0, 'a' ],
    'SH' => ['Short String',               16,  0,  0,  0, 'a' ],
    'SL' => ['Signed Long',                 4,  1,  1,  0, 'i' ],
-   'SQ' => ['Sequence of Items',           0,  0,  0,  0, '' ],
+   'SQ' => ['Sequence of Items',           0,  0,  0,  0, ''  ],
    'SS' => ['Signed Short',                2,  1,  1,  1, 's' ],
    'ST' => ['Short Text',               1024,  0,  0,  0, 'a' ],
    'TM' => ['Time',                       16,  0,  0,  0, 'a' ],
@@ -50,4 +57,23 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
    'UT' => ['Unlimited Text',              0,  0,  0,  0, 'a' ],
    );
 
-# unknowns: OT
+1;
+ 
+__END__
+
+=head1 NAME
+
+DICOM::VR - Definition of DICOM Value Representations (VR)s
+
+=head1 SYNOPSIS
+
+   use DICOM::VR qw/%VR/;
+   
+   my $pack_code = $DICOM::VR::VR{$this->{'code'}}[5];
+   my $numeric = $DICOM::VR::VR{$this->{'code'}}[4];
+   my $max_len = $DICOM::VR::VR{$this->{'code'}}[1];
+
+=head1 DESCRIPTION
+
+This module is little more than a great big list of all the DICOM VRs 
+(Value Representations) that might be used in a DICOM Image

@@ -1,23 +1,30 @@
-# Definitions of fields of DICOM headers.
-# Andrew Crabb (ahc@jhu.edu), May 2002.
-# $Id: Fields.pm,v 1.3 2009/03/12 02:46:24 rotor Exp $
+# DICOM::Fields - Definitions of DICOM fields.
+#
+# Andrew Crabb (ahc@jhu.edu), May 2002
+# Andrew Janke (a.janke@gmail.com), March 2009
+# $Id: Fields.pm,v 1.4 2009/03/12 22:35:51 rotor Exp $
 
 package DICOM::Fields;
 
 use strict;
-
+use warnings;
 require Exporter;
-use vars qw(@ISA @EXPORT $VERSION @dicom_fields);
-use Data::Dumper;
 
-@ISA = qw(Exporter);
-@EXPORT = qw(@dicom_fields);
-$VERSION = sprintf "%d.%03d", q$Revision: 1.3 $ =~ /: (\d+)\.(\d+)/;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(@dicom_fields)
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
 
 # ------------------------------------------------------------------------
 # NOT FOR MEDICAL USE.  This file is provided purely for experimental use.
 # ------------------------------------------------------------------------
-@dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
+# key
+#   group     group (hex)
+#   element   element within group (hex)
+#   VR        Value Representation
+#   multiple  number of items allowed
+#   name      field name
+
+our @dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0000   0000   UL   1      GroupLength
 0000   0001   UL   1      CommandLengthToEnd
 0000   0002   UI   1      AffectedSOPClassUID
@@ -1761,6 +1768,8 @@ FFFE   E00D   NONE 1      ItemDelimitationItem
 FFFE   E0DD   NONE 1      SequenceDelimitationItem
 END_DICOM_FIELDS
 
+
+## others that we aren't using right now
 #  0020   31xx   LT   1-n    SourceImageID
 #  0020   31xx   CS   1-n    SourceImageID
 #  0028   04x0   US   1      RowsForNthOrderCoefficients
@@ -1921,3 +1930,31 @@ END_DICOM_FIELDS
 #  7Fxx   0020   OW   1-n    VariableCoefficientsSDVN
 #  7Fxx   0030   OW   1-n    VariableCoefficientsSDHN
 #  7Fxx   0040   OW   1-n    VariableCoefficientsSDDN
+
+1;
+ 
+__END__
+
+=head1 NAME
+
+DICOM::Fields - Definition of DICOM fields
+
+=head1 SYNOPSIS
+
+  use DICOM::Fields qw/@dicom_fields/;
+  
+  my %dicom_dict;
+  
+  # Initialise dictionary.
+  my ($line, $group, $element, $vr, $size, $name);
+  
+  
+  foreach $line (@dicom_fields){
+     ($group, $element, $vr, $size, $name) = split(/\s+/, $line);
+     $dicom_dict{hex($group)}{hex($element)} = [($vr, $size, $name)];
+     }
+
+=head1 DESCRIPTION
+
+This module is little more than a great big list of all the DICOM fields
+that you would typically want to use with imaging data.
