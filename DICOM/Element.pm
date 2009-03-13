@@ -1,7 +1,8 @@
-# Element.pm ver 0.3
+# DICOM::Element.pm - functions for a DICOM Element
+#
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.11 2009/03/12 22:35:51 rotor Exp $
+# $Id: Element.pm,v 1.12 2009/03/13 06:46:47 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -16,18 +17,20 @@
 package DICOM::Element;
 
 use strict;
-use DICOM::VR qw/%VR/;
+use warnings;
+use Pod::Usage;
+use DICOM::VR;
 use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.11 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.12 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
+
 # Names of the element fields.
 my @fieldnames = qw(group element offset code length name value header);
-my $big_endian_machine = unpack("h*", pack("s", 1)) =~ /01/;
 
 sub new{
    my $type = shift;
@@ -86,11 +89,6 @@ sub fill{
       # Made it to here: Read bytes verbatim.
       read($IN, $this->{'value'}, $this->{'length'}) or die "read($this->{'group'}, $this->{'element'}, $this->{'length'})";
     }
-
-    # byte swap value if appropriate
-#    if($vrbyteswap && ($big_endian_image xor $big_endian_machine)) {
-#  byteswap(\$this->{'value'});
-#    }
 
     # UI may be padded with single trailing NULL (PS 3.5: 6.2.1)
     ($this->{'code'} eq "UI") and $this->{'value'} =~ s/\0$//;
@@ -408,11 +406,22 @@ sub setValue {
    
    my $pack_string;
    
-      # set the length if fixed
+   # set the length if fixed
    if($DICOM::VR::VR{$this->{'code'}}[2] == 1){
       $this->{'length'} = $DICOM::VR::VR{$this->{'code'}}[1];
       
-      $pack_string = $pack_code;
+      # if an array..
+      if($value =~ m/\\/){
+         my @arr = split(/\\/, $value);
+         my $nelem = $#arr + 1;
+         $pack_string = $pack_code . $nelem;
+         
+         $this->{'length'} *= $nelem;
+         }
+      # else just one element
+      else{
+         $pack_string = $pack_code;
+         }
       }
    
    # else figure out the size
@@ -420,20 +429,7 @@ sub setValue {
       my($nelem, $length);
       
       if($numeric){
-         
-         # if an array..
-         if($value =~ m/\\/){
-            my @tmp = split(/\\/, $value);
-            $nelem = $#tmp;
-            
-            print "Found $nelem things -- $value\n";
-            }
-         
-         # else just one element
-         else{
-            $nelem = 1;
-            print "Found $nelem things -- $value\n";
-            }
+         $nelem = 1;
          }
       else{
          # if length is odd, pad
@@ -486,8 +482,22 @@ sub setValue {
 #      print "as is - $pack_code - ";
       }
    else{
-      $this->{'value'} = pack($pack_string, $value);
-#      print "pack - $pack_code - ";
+      
+      # check for an array
+      if($numeric && $value =~ m/\\/){
+         my @arr = split(/\\/, $value);
+         my $nelem = $#arr + 1;
+         
+         $this->{'value'} = pack($pack_string . $nelem, @arr);
+         
+         print "DOing: @arr, -- $pack_string . $nelem\n\n";
+         }
+      
+      # else normal
+      else{
+         $this->{'value'} = pack($pack_string, $value);
+#        print "pack - $pack_code - ";
+         }
       }
    
 #   print "Set value to -" . $this->{'value'} . "-\n";
@@ -524,3 +534,41 @@ sub fix_length {
 1;
 __END__
 
+=head1 NAME
+
+DICOM::Element - Functions for DICOM Elements
+
+=head1 SYNOPSIS
+
+   use DICOM::Element;
+   
+   my $pack_code = $DICOM::VR::VR{$this->{'code'}}[5];
+   my $numeric = $DICOM::VR::VR{$this->{'code'}}[4];
+   my $max_len = $DICOM::VR::VR{$this->{'code'}}[1];
+
+=head1 DESCRIPTION
+
+This module is little more than a great big list of all the DICOM VRs 
+(Value Representations) that might be used in a DICOM Image
+
+=head1 SEE ALSO
+
+DICOM DICOM::VR DICOM::Fields
+
+=head1 AUTHOR
+
+Andrew Crabb E<lt>ahc@jhu.eduE<gt>,
+Jonathan Harlap E<lt>jharlap@bic.mni.mcgill.caE<gt>,
+Andrew Janke E<lt>a.janke@gmail.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2002 by Andrew Crabb
+Some parts are Copyright (C) 2003 by Jonathan Harlap
+And some Copyright (C) 2009 by Andrew Janke
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.6.0 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut

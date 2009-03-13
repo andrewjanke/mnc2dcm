@@ -165,19 +165,19 @@ $d->create_element(0x0008, 0x0022, '20081210');
 $d->create_element(0x0008, 0x0023, '20081210');
 
 # StudyTime
-$d->create_element(0x0008, 0x0030, '1200');
+$d->create_element(0x0008, 0x0030, '120000.000000');
 
 # SeriesTime
-$d->create_element(0x0008, 0x0031, '1200');
+$d->create_element(0x0008, 0x0031, '120000.000000');
 
 # AcquisitionTime
-$d->create_element(0x0008, 0x0032, '1200');
+$d->create_element(0x0008, 0x0032, '120000.000000');
 
 # ImageTime
-$d->create_element(0x0008, 0x0033, '1200');
+$d->create_element(0x0008, 0x0033, '120000.000000');
 
 # AccessionNumber
-$d->create_element(0x0008, 0x0050, '1');
+$d->create_element(0x0008, 0x0050, 1);
 
 # Modality
 $d->create_element(0x0008, 0x0060, 'NM');
@@ -213,22 +213,25 @@ $d->create_element(0x0010, 0x0040, "M");
 
 
 # Sequence name
-$d->create_element(0x0018, 0x1030, "fMRI-test");
+$d->create_element(0x0018, 0x1030, "MINC");
+
+# PatientPosition
+$d->create_element(0x0018, 0x5100, "HFS");
 
 
 # Image Comment
 $d->create_element(0x0020, 0x4000, "Created by $me ($VERSION)");
 
 # StudyID, SeriesNumber, AcquisitionNumber
-$d->create_element(0x0020, 0x0010, 1);
-$d->create_element(0x0020, 0x0011, 1);
-$d->create_element(0x0020, 0x0012, 1);
+$d->create_element(0x0020, 0x0010, '1');
+$d->create_element(0x0020, 0x0011, '1');
+$d->create_element(0x0020, 0x0012, '1');
 
 # ImageOrientation
-$d->create_element(0x0020, 0x0035, 1);
+#$d->create_element(0x0020, 0x0035, 1);
 
 # ImageOrientationPatient
-#$d->create_element(0x0020, 0x0037, 1);
+$d->create_element(0x0020, 0x0037, 1);
 
 # Get sizes
 @args = ('mincinfo',
@@ -241,9 +244,14 @@ $args = join(' ', @args);
 @data = split(/\n/, `$args`);
 ($xsize, $ysize, $zsize) = @data[0..2];
 
+# SeriesInStudy
+$d->create_element(0x0020, 0x1000, 1);
+
+# AcquisitionsInSeries
+$d->create_element(0x0020, 0x1001, 1);
+
 # ImagesInAcquisition
 $d->create_element(0x0020, 0x1002, $zsize);
-
 
 # set columns and rows
 $d->create_element(0x0028, 0x0010, $xsize);
@@ -265,7 +273,7 @@ $d->create_element(0x0028, 0x0102, 15);
 
 
 # first create the required elements (setting to null and/or 0)
-# ImageNumber
+# InstanceNumber
 $d->create_element(0x0020, 0x0013, 0);
 
 # SliceThickness
@@ -285,10 +293,13 @@ $d->create_element(0x0020, 0x0032, "0\\0\\0");
 chomp($x_dircos = `mincinfo -attvalue xspace:direction_cosines $infile`);
 chomp($y_dircos = `mincinfo -attvalue yspace:direction_cosines $infile`);
 $x_dircos =~ s/\ $//g;
-$x_dircos =~ s/\ $//g;
+$y_dircos =~ s/\ $//g;
 $x_dircos =~ s/\ /\\/g;
 $y_dircos =~ s/\ /\\/g;
 $d->create_element(0x0020, 0x0037, $x_dircos . '\\' . $y_dircos);
+
+# SliceLocation
+$d->create_element(0x0020, 0x1041, 0);
 
 # SliceVector
 $d->create_element(0x0054, 0x0080, join('\\', 0..($zsize-1)));
@@ -318,7 +329,10 @@ foreach $s (0..($zsize-1)){
    (@pos) = split(/\ /, $buf);
    $d->{0x0020}{0x0032}->setValue(sprintf("%.15g\\%.15g\\%.15g", 
       $pos[0], $pos[1], $pos[2]));
-
+   
+   # SliceLocation
+   $d->{0x0020}{0x1041}->setValue($pos[2]);
+   
    # get and set the slice
    $data = `mincextract -unsigned -short -start $s,0,0 -count 1,$ysize,$xsize $opt{'tmpdir'}/res.mnc`;
    

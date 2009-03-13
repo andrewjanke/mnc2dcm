@@ -1,22 +1,21 @@
-# DICOM.pm
+# DICOM.pm -Perl module to read and write DICOM files
+#
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Jonathan Harlap (jharlap@bic.mni.mcgill.ca) 2003
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
-# Perl module to read DICOM headers.
-# TODO: add support for sequences (SQ) (currently being skipped)
-# $Id: DICOM.pm,v 1.7 2009/03/12 11:09:03 rotor Exp $
+#
+# $Id: DICOM.pm,v 1.8 2009/03/13 06:46:47 rotor Exp $
 
 package DICOM;
 
 use strict;
-use vars qw($VERSION %dict);
+use warnings;
+use Pod::Usage;
 
 use DICOM::Element;
-use DICOM::Fields qw/@dicom_fields/;   # Standard header definitions.
-use DICOM::VRfields; # Field data types
-use DICOM::Private;  # Private or custom definitions.
+use DICOM::Fields;
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.7 $ =~ /: (\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.8 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;    # Field to sort by.
@@ -25,7 +24,7 @@ my $isdicm;    # Set to 1 if DICM file; 0 if NEMA.
 my $currentfile;  # Currently open file.
 my $preamblebuff = 0;   # Store initial 0x80 bytes.
 
-my %dicom_dict;
+my (%dict, %dicom_dict);
 
 # Initialize dictionary only once.
 # Read the contents of the DICOM dictionary into a hash by group and element.
@@ -33,14 +32,14 @@ my %dicom_dict;
 BEGIN {
    my ($line, $group, $element, $vr, $size, $name);
   
-   foreach $line (@dicom_fields, @dicom_private) {
+   foreach $line (@dicom_fields) {
       next if ($line =~ /^\#/);
     ( $group, $element, $vr, $size, $name) = split(/\s+/, $line);
       my @lst = ($vr, $name);
       $dict{$group}{$element} = [@lst];
       }
    
-   foreach $line (@dicom_fields, @dicom_private){
+   foreach $line (@dicom_fields){
       ($group, $element, $vr, $size, $name) = split(/\s+/, $line);
       $dicom_dict{hex($group)}{hex($element)} = [($vr, $size, $name)];
       }
@@ -122,13 +121,13 @@ sub create_element {
    $elem->{'offset'} = 0;
    
    # set the initial length
-   if($DICOM::VRfields::VR{$elem->{'code'}}[2] == 1){
-      $elem->{'length'} = $DICOM::VRfields::VR{$elem->{'code'}}[1];
-      }
-   else{
-      $elem->{'length'} = 0;
-      }
-   
+   #if($DICOM::VRfields::VR{$elem->{'code'}}[2] == 1){
+   #   $elem->{'length'} = $DICOM::VRfields::VR{$elem->{'code'}}[1];
+   #   }
+   #else{
+   #   $elem->{'length'} = 0;
+   #   }
+    
    # set the value
    $elem->setValue($val);
 
@@ -359,13 +358,15 @@ The DICOM standard - http://medical.nema.org/
 
 =head1 AUTHOR
 
-Andrew Crabb, E<lt>ahc@jhu.eduE<gt>
-Jonathan Harlap, E<lt>jharlap@bic.mni.mcgill.caE<gt>
+Andrew Crabb E<lt>ahc@jhu.eduE<gt>,
+Jonathan Harlap E<lt>jharlap@bic.mni.mcgill.caE<gt>,
+Andrew Janke E<lt>a.janke@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2002 by Andrew Crabb
 Some parts are Copyright (C) 2003 by Jonathan Harlap
+And some Copyright (C) 2009 by Andrew Janke
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.6.0 or,

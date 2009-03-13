@@ -2,17 +2,20 @@
 #
 # Andrew Crabb (ahc@jhu.edu), May 2002
 # Andrew Janke (a.janke@gmail.com), March 2009
-# $Id: Fields.pm,v 1.4 2009/03/12 22:35:51 rotor Exp $
+# $Id: Fields.pm,v 1.5 2009/03/13 06:46:47 rotor Exp $
 
 package DICOM::Fields;
 
 use strict;
 use warnings;
+use Pod::Usage;
+
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(@dicom_fields)
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /: (\d+)\.(\d+)/;
+our @EXPORT = qw(@dicom_fields);
+
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
 
 # ------------------------------------------------------------------------
 # NOT FOR MEDICAL USE.  This file is provided purely for experimental use.
@@ -574,7 +577,7 @@ our @dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0020   0010   SH   1      StudyID
 0020   0011   IS   1      SeriesNumber
 0020   0012   IS   1      AcquisitionNumber
-0020   0013   IS   1      ImageNumber
+0020   0013   IS   1      InstanceNumber
 0020   0014   IS   1      IsotopeNumber
 0020   0015   IS   1      PhaseNumber
 0020   0016   IS   1      IntervalNumber
@@ -597,8 +600,8 @@ our @dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0020   0080   CS   1-n    MaskingImage
 0020   0100   IS   1      TemporalPositionIdentifier
 0020   0105   IS   1      NumberOfTemporalPositions
-0020   0110   DS   1      TemporalResolution
 0020   0200   UI   1      SynchronizationFrameofReferenceUID
+0020   0110   DS   1      TemporalResolution
 0020   1000   IS   1      SeriesInStudy
 0020   1001   IS   1      AcquisitionsInSeries
 0020   1002   IS   1      ImagesInAcquisition
@@ -1958,3 +1961,25 @@ DICOM::Fields - Definition of DICOM fields
 
 This module is little more than a great big list of all the DICOM fields
 that you would typically want to use with imaging data.
+
+=head1 SEE ALSO
+
+DICOM DICOM::VR DICOM::Element
+
+=head1 AUTHOR
+
+Andrew Crabb E<lt>ahc@jhu.eduE<gt>,
+Jonathan Harlap E<lt>jharlap@bic.mni.mcgill.caE<gt>,
+Andrew Janke E<lt>a.janke@gmail.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2002 by Andrew Crabb
+Some parts are Copyright (C) 2003 by Jonathan Harlap
+And some Copyright (C) 2009 by Andrew Janke
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.6.0 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut

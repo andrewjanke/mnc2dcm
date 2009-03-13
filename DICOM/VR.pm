@@ -2,17 +2,19 @@
 #
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Andrew Janke (a.janke@gmail.com), March 2009
-# $Id: VR.pm,v 1.1 2009/03/12 22:35:51 rotor Exp $
+# $Id: VR.pm,v 1.2 2009/03/13 06:46:47 rotor Exp $
 
 package DICOM::VR;
 
 use strict;
 use warnings;
+use Pod::Usage;
+
 require Exporter;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(%VR);
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.1 $ =~ /: (\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.2 $ =~ /: (\d+)\.(\d+)/;
 
 # Value Representations (DICOM Standard PS 3.5 Sect 6.2)
 # Code     2 character DICOM VR
@@ -77,3 +79,25 @@ DICOM::VR - Definition of DICOM Value Representations (VR)s
 
 This module is little more than a great big list of all the DICOM VRs 
 (Value Representations) that might be used in a DICOM Image
+
+=head1 SEE ALSO
+
+DICOM DICOM::Fields DICOM::Element
+
+=head1 AUTHOR
+
+Andrew Crabb E<lt>ahc@jhu.eduE<gt>,
+Jonathan Harlap E<lt>jharlap@bic.mni.mcgill.caE<gt>,
+Andrew Janke E<lt>a.janke@gmail.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2002 by Andrew Crabb
+Some parts are Copyright (C) 2003 by Jonathan Harlap
+And some Copyright (C) 2009 by Andrew Janke
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.6.0 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut
