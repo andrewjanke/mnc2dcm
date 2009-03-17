@@ -16,6 +16,7 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
 use File::Temp qw/ tempdir /;
+use Time::HiRes qw(gettimeofday);
 use Cwd;
 
 use DICOM;
@@ -120,7 +121,7 @@ $d->create_element(0x0002, 0x0010, '1.2.840.10008.1.2.1');
 $d->create_element(0x0002, 0x0012, '0.0.0.0');
 
 # ImplementationVersionName
-$d->create_element(0x0002, 0x0013, 'NOTSPECIFIED');
+$d->create_element(0x0002, 0x0013, "mnc2dcm $VERSION");
 
 # SourceApplicationEntityTitle
 $d->create_element(0x0002, 0x0016, 'NOTSPECIFIED');
@@ -132,7 +133,7 @@ $d->{0x0002}{0x0000}->setValue($size);
 
 # (0x0008 group)
 # SpecificCharacterSet
-#$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
+$d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
 # ImageType
 $d->create_element(0x0008, 0x0008, 'DERIVED\SECONDARY');
@@ -141,7 +142,11 @@ $d->create_element(0x0008, 0x0008, 'DERIVED\SECONDARY');
 $d->create_element(0x0008, 0x0012, '20090303');
 
 # InstanceCreationTime
-$d->create_element(0x0008, 0x0013, '224555');
+my($seconds, $milliseconds, @t, $dcmtime);
+($seconds, $milliseconds) = gettimeofday();
+@t = localtime($seconds);
+$dcmtime = sprintf("%02d%02d%02d.%06d", $t[2], $t[1], $t[0], $milliseconds);
+$d->create_element(0x0008, 0x0013, $dcmtime);
 
 # InstanceCreatorUID
 $d->create_element(0x0008, 0x0014, '777.777.0.0.0');
@@ -164,23 +169,26 @@ $d->create_element(0x0008, 0x0022, '20081210');
 # ImageDate
 $d->create_element(0x0008, 0x0023, '20081210');
 
+# AcquisitionDateTime
+$d->create_element(0x0008, 0x002a, "20081210" . $seconds);
+
 # StudyTime
-$d->create_element(0x0008, 0x0030, '120000.000000');
+$d->create_element(0x0008, 0x0030, $dcmtime);
 
 # SeriesTime
-$d->create_element(0x0008, 0x0031, '120000.000000');
+$d->create_element(0x0008, 0x0031, $dcmtime);
 
 # AcquisitionTime
-$d->create_element(0x0008, 0x0032, '120000.000000');
+$d->create_element(0x0008, 0x0032, $dcmtime);
 
-# ImageTime
-$d->create_element(0x0008, 0x0033, '120000.000000');
+# ContentTime
+$d->create_element(0x0008, 0x0033, $dcmtime);
 
 # AccessionNumber
-$d->create_element(0x0008, 0x0050, 1);
+$d->create_element(0x0008, 0x0050, 1234);
 
 # Modality
-$d->create_element(0x0008, 0x0060, 'NM');
+$d->create_element(0x0008, 0x0060, 'MR');
 
 # Manufacturer
 $d->create_element(0x0008, 0x0070, 'minc');
@@ -189,28 +197,55 @@ $d->create_element(0x0008, 0x0070, 'minc');
 $d->create_element(0x0008, 0x0080, 'Unknown');
 
 # ReferringPhysicianName
-$d->create_element(0x0008, 0x0090, 'Unknown^^^^');
+$d->create_element(0x0008, 0x0090, '');
 
 # StudyDescription
 $d->create_element(0x0008, 0x1030, $history);
 
 # SeriesDescription
-$d->create_element(0x0008, 0x103E, 'Unknown');
+$d->create_element(0x0008, 0x103E, $history);
 
 # OperatorName
-#$d->create_element(0x0008, 0x1070, 'Andrew Janke');
+$d->create_element(0x0008, 0x1070, $ENV{'USER'});
 
 # DerivationDescription
 $d->create_element(0x0008, 0x2111, 'mnc2dcm - Andrew Janke <a.janke@gmail.com>');
 
 
 # (0x0010 group)
-# Patient Name, ID, BirthDate, Sex
+# PatientsName
 $d->create_element(0x0010, 0x0010, "JOHN^DOE");
+
+# PatientID
 $d->create_element(0x0010, 0x0020, "PatientID");
+
+# PatientsBirthDate
 $d->create_element(0x0010, 0x0030, "19990101");
+
+# PatientsSex
 $d->create_element(0x0010, 0x0040, "M");
 
+# PatientsAge
+$d->create_element(0x0010, 0x1010, "099Y");
+
+
+# (0x0018 group)
+# AcquisitionType
+$d->create_element(0x0018, 0x0023, "2D");
+
+# SliceThickness
+# Nominal slice thickness, in mm.
+chomp($z_thick = `mincinfo -attvalue zspace:step $infile`);
+$d->create_element(0x0018, 0x0050, $z_thick * 1);
+
+# NumberOfAverages
+$d->create_element(0x0018, 0x0083, 1);
+
+# EchoNumbers
+$d->create_element(0x0018, 0x0086, 1);
+
+# SpacingBetweenSlices
+$d->create_element(0x0018, 0x0088, 0);
 
 # Sequence name
 $d->create_element(0x0018, 0x1030, "MINC");
@@ -219,12 +254,24 @@ $d->create_element(0x0018, 0x1030, "MINC");
 $d->create_element(0x0018, 0x5100, "HFS");
 
 
+# (0x0020 group)
+
+# StudyInstanceUID
+$d->create_element(0x0020, 0x000d, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+
+# SeriesInstanceUID
+$d->create_element(0x0020, 0x000e, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+
 # Image Comment
 $d->create_element(0x0020, 0x4000, "Created by $me ($VERSION)");
 
-# StudyID, SeriesNumber, AcquisitionNumber
+# StudyID
 $d->create_element(0x0020, 0x0010, '1');
+
+# SeriesNumber
 $d->create_element(0x0020, 0x0011, '1');
+
+# AcquisitionNumber
 $d->create_element(0x0020, 0x0012, '1');
 
 # ImageOrientation
@@ -253,33 +300,45 @@ $d->create_element(0x0020, 0x1001, 1);
 # ImagesInAcquisition
 $d->create_element(0x0020, 0x1002, $zsize);
 
-# set columns and rows
+
+# (0x0028 group)
+# SamplesPerPixel
+$d->create_element(0x0028, 0x0002, 1);
+
+# Rows
 $d->create_element(0x0028, 0x0010, $xsize);
+
+# Columns
 $d->create_element(0x0028, 0x0011, $ysize);
 
 # PixelSpacing
 $d->create_element(0x0028, 0x0030, "1.0\\1.0");
 
-# SamplesPerPixel
-$d->create_element(0x0028, 0x0002, 1);
+# BitsAllocated
+$d->create_element(0x0028, 0x0100, 16);
+
+# BitsStored
+$d->create_element(0x0028, 0x0101, 16);
+
+# HighBit
+$d->create_element(0x0028, 0x0102, 15);
 
 # PixelRepresentation
 $d->create_element(0x0028, 0x0103, 0);
 
-# BitsAllocated, BitsStored, HighBit
-$d->create_element(0x0028, 0x0100, 16);
-$d->create_element(0x0028, 0x0101, 16);
-$d->create_element(0x0028, 0x0102, 15);
+# SmallestImagePixelValue - real_range[0]
+$d->create_element(0x0028, 0x0106, 0);
+
+# LargestImagePixelValue - real_range[1]
+$d->create_element(0x0028, 0x0107, 65535);
+
+
 
 
 # first create the required elements (setting to null and/or 0)
 # InstanceNumber
 $d->create_element(0x0020, 0x0013, 0);
 
-# SliceThickness
-# Nominal slice thickness, in mm.
-chomp($z_thick = `mincinfo -attvalue zspace:step $infile`);
-$d->create_element(0x0018, 0x0050, $z_thick * 1);
 
 # ImagePositionPatient
 # The x, y, and z coordinates of the upper
@@ -302,10 +361,10 @@ $d->create_element(0x0020, 0x0037, $x_dircos . '\\' . $y_dircos);
 $d->create_element(0x0020, 0x1041, 0);
 
 # SliceVector
-$d->create_element(0x0054, 0x0080, join('\\', 0..($zsize-1)));
+#$d->create_element(0x0054, 0x0080, join('\\', 1..($zsize+1)));
 
 # NumberOfSlices
-$d->create_element(0x0054, 0x0081, $zsize);
+#$d->create_element(0x0054, 0x0081, $zsize);
 
 # PixelData
 $d->create_element(0x7FE0, 0x0010, 0);
@@ -319,9 +378,19 @@ foreach $s (0..($zsize-1)){
    $s_txt = sprintf("%05d", $s);
    $outfile = "$outdir/$s_txt.dcm";
    
-   # set the image number
-   $d->{0x0020}{0x0013}->setValue($s);
+   # set times
+   ($seconds, $milliseconds) = gettimeofday();
+   @t = localtime($seconds);
+   $dcmtime = sprintf("%02d%02d%02d.%06d", $t[2], $t[1], $t[0], $milliseconds);
+   $d->{0x0008}{0x0013}->setValue($dcmtime);
+   $d->{0x0008}{0x0033}->setValue($dcmtime);
    
+   # set the image number
+   $d->{0x0020}{0x0013}->setValue($s+1);
+
+   # AcquisitionNumber
+   $d->{0x0020}{0x0012}->setValue($s+1);
+      
    # ImagePositionPatient
    $args = "voxeltoworld $opt{'tmpdir'}/res.mnc " .
            0 . ' ' . ($ysize-1) . ' ' . $s;

@@ -2,7 +2,7 @@
 #
 # Andrew Crabb (ahc@jhu.edu), May 2002
 # Andrew Janke (a.janke@gmail.com), March 2009
-# $Id: Fields.pm,v 1.5 2009/03/13 06:46:47 rotor Exp $
+# $Id: Fields.pm,v 1.6 2009/03/17 23:49:09 rotor Exp $
 
 package DICOM::Fields;
 
@@ -15,7 +15,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(@dicom_fields);
 
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.5 $ =~ /: (\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.6 $ =~ /: (\d+)\.(\d+)/;
 
 # ------------------------------------------------------------------------
 # NOT FOR MEDICAL USE.  This file is provided purely for experimental use.
@@ -131,7 +131,7 @@ our @dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0008   0030   TM   1      StudyTime
 0008   0031   TM   1      SeriesTime
 0008   0032   TM   1      AcquisitionTime
-0008   0033   TM   1      ImageTime
+0008   0033   TM   1      ContentTime
 0008   0034   TM   1      OverlayTime
 0008   0035   TM   1      CurveTime
 0008   0040   US   1      OldDataSetType
@@ -669,15 +669,15 @@ our @dicom_fields = <<END_DICOM_FIELDS =~ m/(\S.*\S)/g;
 0028   0101   US   1      BitsStored
 0028   0102   US   1      HighBit
 0028   0103   US   1      PixelRepresentation
-0028   0104   US/SS   1      SmallestValidPixelValue
-0028   0105   US/SS   1      LargestValidPixelValue
-0028   0106   US/SS   1      SmallestImagePixelValue
-0028   0107   US/SS   1      LargestImagePixelValue
-0028   0108   US/SS   1      SmallestPixelValueInSeries
-0028   0109   US/SS   1      LargestPixelValueInSeries
-0028   0110   US/SS   1      SmallestPixelValueInPlane
-0028   0111   US/SS   1      LargestPixelValueInPlane
-0028   0120   US/SS   1      PixelPaddingValue
+0028   0104   US   1      SmallestValidPixelValue
+0028   0105   US   1      LargestValidPixelValue
+0028   0106   US   1      SmallestImagePixelValue
+0028   0107   US   1      LargestImagePixelValue
+0028   0108   US   1      SmallestPixelValueInSeries
+0028   0109   US   1      LargestPixelValueInSeries
+0028   0110   US   1      SmallestPixelValueInPlane
+0028   0111   US   1      LargestPixelValueInPlane
+0028   0120   US   1      PixelPaddingValue
 0028   0200   US   1      ImageLocation
 0028   0300   CS   1      QualityControlImage
 0028   0301   CS   1      BurnedInAnnotation
