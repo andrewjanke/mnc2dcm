@@ -1,6 +1,6 @@
 #! /usr/bin/env perl
 #
-# A simple DICOM dumper
+# A simple DICOM file moveratoror
 #
 # Copyright Andrew Janke - a.janke@gmail.com
 # Permission to use, copy, modify, and distribute this software and its
@@ -18,9 +18,9 @@ use Pod::Usage;
 use File::Basename;
 use Cwd;
 
-use DICOM-all;
-#use DICOM::Fields;
-#use DICOM::Element;
+use Term::ANSIColor;
+
+use DICOM;
 
 # until I get organised and do this properly
 my $PACKAGE = &basename($0);
@@ -35,6 +35,9 @@ $me = &basename($0);
         man => 0,
         help => 0,
         move => 0,
+        copy => 0,
+        by_id => 0,
+        outdir => '',
         );
 
 # Get the history string
@@ -49,6 +52,9 @@ $history .= '>>>> ' . join(' ', $me, @ARGV) . "\n";
    'version' => sub { &print_version_info },
    'f|fake' => \$opt{'fake'},
    'move' => \$opt{'move'},
+   'copy' => \$opt{'copy'},
+   'by_id' => \$opt{'by_id'},
+   'outdir=s' => \$opt{'outdir'},
    ) or pod2usage(-verbose => 1) && exit;
    
 # handle -man, -help or missing args
@@ -75,6 +81,11 @@ foreach $f (@ARGV){
    die "This is bad - $f probably doesn't exist\n";
    }
 
+# default to current directory
+if($opt{'outdir'} eq ''){
+   $opt{'outdir'} = &getcwd;
+   }
+
 # create the DICOM object
 my $d = DICOM->new();
 
@@ -87,6 +98,10 @@ foreach $infile (@infiles){
    #print "CONTENTS ($infile)\n";
    #$d->printContents();
    
+   # hunt for a patient name or ID
+   $PatientName = $d->value('0010', '0010');
+   $PatientID = $d->value('0010', '0020');
+      
    # Series, Acquisition, Image IDS
    $StudyID = $d->value('0020', '0010');
    $SeriesNumber = $d->value('0020', '0011');
@@ -99,43 +114,13 @@ foreach $infile (@infiles){
    $AcquisitionNumber *= 1;
    $ImageNumber *= 1;
    
-   # print "[$infile:$StudyID] S:$SeriesNumber A:$AcquisitionNumber I:$ImageNumber\n";
-   
-   # hunt for a patient name or ID
-   $PatientName = $d->value('0010', '0010');
-   $PatientID = $d->value('0010', '0020');
-   
-   $ID = "$PatientID\_$PatientName-$StudyID";
-   
-   $ID =~ s/\^/\-/g;
-   $ID =~ s/\ //g;
-   $ID = lc($ID);
-   
-   # print "PN: $ID\n";
-   
-   # enter the filename
-   $db{$ID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
-   
    # times
    $StudyDate = $d->value('0008', '0020');
+   $StudyTime = $d->value('0008', '0030');
    $SeriesDate = $d->value('0008', '0021');
    $SeriesTime = $d->value('0008', '0031');
    $AcquisitionTime = $d->value('0008', '0032');
    $ImageTime = $d->value('0008', '0033');
-   
-  # print "[$infile:$ID] $StudyDate $SeriesDate $SeriesTime $AcquisitionTime $ImageTime\n";
-   
-   $StudyDate{$ID} = $StudyDate;
-   $SeriesDate{"$ID:$SeriesNumber"} = $SeriesDate;
-   
-   if(defined($SeriesTime{"$ID:$SeriesNumber"}) && 
-      $SeriesTime{"$ID:$SeriesNumber"} != $SeriesTime){
-      print "ERROR! Series Time does not match($infile)";
-      #exit(1);
-      }
-   $SeriesTime{"$ID:$SeriesNumber"} = $SeriesTime;
-   $AcquisitionTime{"$ID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
-   $ImageTime{"$ID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
    
    # Sequence, Protocol Name
    $SequenceName = $d->value('0018', '0024');
@@ -143,45 +128,65 @@ foreach $infile (@infiles){
    $SequenceName =~ s/\ $//g;
    $ProtocolName =~ s/\ $//g;
    
+   # figure out ID and record info
+   if($opt{'by_id'}){
+      $ID = join('-', $PatientID, $StudyDate, $StudyTime);
+      }
+   else{
+      $ID = "$PatientID\_$PatientName-$StudyID";
+      }
+   
+   $ID =~ s/\^/\-/g;
+   $ID =~ s/\ //g;
+   $ID = lc($ID);
+   
+   print "[$ID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - " .
+      "$SequenceName - $ProtocolName  -- $infile\n" if $opt{'verbose'};
+   
+   # enter the filename
+   $db{$ID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
+   
+   $StudyDate{$ID} = $StudyDate;
+   $SeriesDate{"$ID:$SeriesNumber"} = $SeriesDate;
+   
+   if(defined($SeriesTime{"$ID:$SeriesNumber"}) && 
+      $SeriesTime{"$ID:$SeriesNumber"} != $SeriesTime){
+      print "ERROR! Series Time does not match($infile)";
+      # exit(1);
+      }
+   $SeriesTime{"$ID:$SeriesNumber"} = $SeriesTime;
+   $AcquisitionTime{"$ID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
+   $ImageTime{"$ID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
+   
    $SequenceName{"$ID:$SeriesNumber"} = $SequenceName;
    $ProtocolName{"$ID:$SeriesNumber"} = $ProtocolName;
-  # print "[$infile:$ID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - $SequenceName - $ProtocolName\n";
-  
+   
    print '.';
    }
 print "Done\n";
 
 
-#(0008, 0020) DA      8: StudyDate                         = 20090218
-#(0008, 0021) DA      8: SeriesDate                        = 20090219
-#(0008, 0022) DA      8: AcquisitionDate                   = 20090219
-#(0008, 0023) DA      8: ImageDate                         = 20090219
-
-#(0008, 0030) TM     14: StudyTime                         = 142540.687000 
-#(0008, 0031) TM     14: SeriesTime                        = 134047.437000 
-#(0008, 0032) TM     14: AcquisitionTime                   = 134110.150000 
-#(0008, 0033) TM     14: ImageTime                         = 134111.921000 
-
-
-#(0020, 0010) SH      8: StudyID                           = 5150440 
-#(0020, 0011) IS      2: SeriesNumber                      = 30
-#(0020, 0012) IS      2: AcquisitionNumber                 = 9 
-#(0020, 0013) IS      2: ImageNumber                       = 9 
-
 
 # print out the database
-
 foreach $id (sort keys(%db)){
-
    foreach $ser (sort {$a <=> $b} (keys(%{$db{$id}}))){
-
-      print "[$id][" . sprintf("%03d", $ser) . 
+      
+      # pretty output
+      print color 'bold blue';
+      print "[$id]";
+      
+      print color 'reset';
+      print color 'yellow';
+      print '[' . sprintf("%03d", $ser) . 
             '][' . $SeriesDate{"$id:$ser"} . 
             '][' . $SeriesTime{"$id:$ser"} . 
-            '] '. $ProtocolName{"$id:$ser"} . 
-            ' ';
+            '] ';
+      
+      print color 'bold red';
+      print $ProtocolName{"$id:$ser"} . '   ';
+      
+      print color 'reset';
 
-      print "   ";
       foreach $acq (sort {$a <=> $b} (keys(%{$db{$id}{$ser}}))){
 
          #print "   Acq[" . $AcquisitionTime{"$ID:$s:$a"} . "]: $a  (";
@@ -191,21 +196,38 @@ foreach $id (sort keys(%db)){
 
          print '(' . join(' ', @imgs) . ') ' if($#imgs > 0);
          
-         if($opt{'move'}){
+         if($opt{'move'} || $opt{'copy'}){
             foreach $img (@imgs){
                
                $infile = $db{$id}{$ser}{$acq}{$img};
                
-               $protocol = $ProtocolName{"$id:$ser"};
+               $protocol = lc($ProtocolName{"$id:$ser"});
                $protocol =~ s/\//\-/g;
                $protocol =~ s/\ /\-/g;
-               $outdir = "$id/" . sprintf("%04d", $ser) . "_$protocol";
-               $outfile = sprintf("%04d-%04d.dcm", $acq, $img);
                
-            #   print "$infile => $outdir/$outfile\n";
+               $outdir = "$opt{'outdir'}/$id/" .
+                  sprintf("%04d", $ser) . "_$protocol";
                
+               $outfile = $outdir . '/' . sprintf("%04d-%04d.dcm", $acq, $img);
+               
+               # print "$infile => $outdir/$outfile\n" if $opt{'verbose'};
+               
+               # make output dir
                &do_cmd('mkdir', '-p', $outdir);
-               &do_cmd('mv', '-i', $infile, "$outdir/$outfile");
+               
+               # check if it exists first
+               if(-e $outfile){
+                  warn "$outfile exists, (from: $infile) skipping\n";
+                  }
+               else{
+                  if($opt{'move'}){
+                     &do_cmd('mv', '-i', $infile, $outfile);
+                     }
+                  
+                  if($opt{'copy'}){
+                     &do_cmd('cp', '-i', $infile, $outfile);
+                     }
+                  }
                }
             }
          }
