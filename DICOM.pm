@@ -4,7 +4,7 @@
 # Jonathan Harlap (jharlap@bic.mni.mcgill.ca) 2003
 # Alexandre Carmel-Veilleux (acveilleux@neurorx.com) 2004-2005
 #
-# $Id: DICOM.pm,v 1.8 2009/03/13 06:46:47 rotor Exp $
+# $Id: DICOM.pm,v 1.9 2009/06/19 14:08:36 rotor Exp $
 
 package DICOM;
 
@@ -15,7 +15,7 @@ use Pod::Usage;
 use DICOM::Element;
 use DICOM::Fields;
 
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.8 $ =~ /: (\d+)\.(\d+)/;
+our $VERSION = sprintf "%d.%03d", q$Revision: 1.9 $ =~ /: (\d+)\.(\d+)/;
 
 # Class variables.
 my $sortIndex;    # Field to sort by.
@@ -57,24 +57,22 @@ sub new {
 }
 
 # Store and process the command line options from hash ref.
-
-sub processOpts {
-  my $this = shift;
-  my ($href) = @_;
-  my $outfile;
-  %opts = %$href;
-
-  foreach my $key (keys %opts) {
-    ($key eq 's') and $this->setIndex($opts{$key});   # Sort.
-    ($key eq 'm') and $this->editHeader($opts{$key}); # Modify header.
-    ($key eq 'o') and $outfile = $opts{$key};
-  }
-  # 'Save As' option is processed last.
-  $this->write($outfile) if (defined($outfile));
-}
+# sub processOpts {
+#   my $this = shift;
+#   my ($href) = @_;
+#   my $outfile;
+#   %opts = %$href;
+# 
+#   foreach my $key (keys %opts) {
+#     ($key eq 's') and $this->setIndex($opts{$key});   # Sort.
+#     ($key eq 'm') and $this->editHeader($opts{$key}); # Modify header.
+#     ($key eq 'o') and $outfile = $opts{$key};
+#   }
+#   # 'Save As' option is processed last.
+#   $this->write($outfile) if (defined($outfile));
+# }
 
 # Fill in hash with header members from given file.
-
 sub fill {
   my ($this, $infile, $big_endian_image) = @_;
 
@@ -120,15 +118,7 @@ sub create_element {
    # set the offset to zero (we dont use it anyhow)
    $elem->{'offset'} = 0;
    
-   # set the initial length
-   #if($DICOM::VRfields::VR{$elem->{'code'}}[2] == 1){
-   #   $elem->{'length'} = $DICOM::VRfields::VR{$elem->{'code'}}[1];
-   #   }
-   #else{
-   #   $elem->{'length'} = 0;
-   #   }
-    
-   # set the value
+   # set the value (and length)
    $elem->setValue($val);
 
    $this->{$gr}{$el} = $elem;
@@ -137,7 +127,6 @@ sub create_element {
 # Write currently open file to given file name, or to current name 
 # if no new name specified.  All fields before value are written
 # verbatim; value field is stored as is (possibly edited).
-
 sub write {
   my ($this, $outfile) = @_;
   
@@ -159,7 +148,6 @@ sub write {
 }
 
 # Print all elements, to disk if file handle supplied.
-
 sub printContents {
   my ($this, $OUTFILE) = @_;
   my %hash = %$this;
@@ -178,7 +166,6 @@ sub printContents {
 }
 
 # Return sorted array of references to element arrays.
-
 sub contents {
   my $this = shift;
   my %hash = %$this;
@@ -199,7 +186,6 @@ sub contents {
 }
 
 # Set field index to sort by.  Return 1 if new index, else 0.
-
 sub setIndex {
   my $this = shift;
   my ($val) = @_;
@@ -214,13 +200,11 @@ sub setIndex {
 }
 
 # Return sort index.
-
 sub getIndex {
   return $sortIndex;
 }
 
 # Return value of the element at (group, element).
-
 sub value {
   my $this = shift;
   my ($gp, $el) = @_;
@@ -231,7 +215,6 @@ sub value {
 
 # Return field of given index from element.
 # Params: Group, Element, Field index.
-
 sub field {
   my $this = shift;
   my ($gp, $el, $fieldname) = @_;
@@ -244,7 +227,6 @@ sub field {
 # String format: 'gggg,eeee=newvalue' or 'fieldname=newvalue'.
 #   gggg, eeee = group, element (in hex); XXXX = new value.
 #   fieldname = name of field from @dicom_fields.
-
 sub editHeader {
   my ($this, $editstr) = @_;
   my ($gp, $el, $val);
@@ -263,7 +245,6 @@ sub editHeader {
 }
 
 # Return group and element number of field with given name.
-
 sub fieldByName {
   my ($this, $searchname) = @_;
   my ($gp, $el);
@@ -282,7 +263,6 @@ sub fieldByName {
 }
 
 # Replace value of given element.
-
 sub setElementValue {
   my $this = shift;
   my ($gp, $el, $newvalue) = @_;
@@ -293,7 +273,6 @@ sub setElementValue {
 #  ------------------------------------------------------------
 #  Utility Functions (non-public)
 #  ------------------------------------------------------------
-
 sub hexadecimally {
   hex($a) <=> hex($b);
 }

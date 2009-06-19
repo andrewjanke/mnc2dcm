@@ -2,7 +2,7 @@
 #
 # Andrew Crabb (ahc@jhu.edu), May 2002.
 # Element routines for DICOM.pm: a Perl module to read DICOM headers.
-# $Id: Element.pm,v 1.12 2009/03/13 06:46:47 rotor Exp $
+# $Id: Element.pm,v 1.13 2009/06/19 14:08:36 rotor Exp $
 
 # Each element is a hash with the following keys:
 #   group   Group (hex).
@@ -24,7 +24,7 @@ use DICOM::Fields;
 
 our ($VERSION);
 
-$VERSION = sprintf "%d.%03d", q$Revision: 1.12 $ =~ /: (\d+)\.(\d+)/;
+$VERSION = sprintf "%d.%03d", q$Revision: 1.13 $ =~ /: (\d+)\.(\d+)/;
 
 my ($SHORT, $INT) = (2, 4);   # Constants: Byte sizes.
 my ($FLOAT, $DOUBLE) = ('f', 'd');  # Constants: unpack formats
@@ -455,7 +455,8 @@ sub setValue {
          }
       
       if($max_len != 0 && $length > $max_len){
-         warn "[" . $this->{'group'} . "][" . $this->{'element'} . 
+         warn "+++ [" . sprintf("%04X", $this->{'group'}) . "][" . 
+            sprintf("%04X", $this->{'element'}) . 
             "] is too big ($length) should be ($max_len)\n";
          }
       
@@ -542,14 +543,7 @@ DICOM::Element - Functions for DICOM Elements
 
    use DICOM::Element;
    
-   my $pack_code = $DICOM::VR::VR{$this->{'code'}}[5];
-   my $numeric = $DICOM::VR::VR{$this->{'code'}}[4];
-   my $max_len = $DICOM::VR::VR{$this->{'code'}}[1];
-
 =head1 DESCRIPTION
-
-This module is little more than a great big list of all the DICOM VRs 
-(Value Representations) that might be used in a DICOM Image
 
 =head1 SEE ALSO
 

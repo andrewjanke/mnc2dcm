@@ -60,9 +60,9 @@ $infile = $ARGV[0];
 $outdir = $ARGV[1];
 
 
-#$hash = sdbm_hash("this is some text");
-#print "HASH: $hash\n";
-#exit;
+$hash = &sdbm_hash("this is some text");
+print "HASH: $hash\n";
+exit;
 
 # set up tmpdir
 $opt{tmpdir} = &tempdir( "$me-XXXXXXXX", TMPDIR => 1, CLEANUP => 1 );
@@ -129,6 +129,7 @@ $d->create_element(0x0002, 0x0016, 'NOTSPECIFIED');
 # calc group size and set it
 $size = &calc_size($d);
 $d->{0x0002}{0x0000}->setValue($size);
+print "+++ Set 0002,0000 (group size) to $size\n" if $opt{'verbose'};
 
 
 # (0x0008 group)
@@ -418,16 +419,25 @@ print "CONTENTS: \n";
 # sub sdbm - hashing function from here:
 #   http://www.cse.yorku.ca/~oz/hash.html
 sub sdbm_hash {
+   #use integer; 
    my ($input) = @_;
 
    my ($c, $hash);
 
    print "$input - ($#input)\n";
-
+   
    $hash = 0;
+   $p_hash = 0;
    foreach $c (0..length($input)){
 
-      $hash = int(substr($input, $c, 1)) + ($hash << 6) + ($hash << 16) - $hash;
+      $hash = $p_hash * 65599 + ord(substr($input, $c, 1));
+      
+      print "HASH: $hash\n";
+      
+      #print "HASH[$c]: $hash FRED: " . ord(substr($input, $c, 1)) . " <<16 " . ($hash >> 16) . "\n";
+      #$hash = ord(substr($input, $c, 1)) + ($hash << 6) + ($hash << 16) - $hash;
+      
+      $p_hash = $hash;
       }
 
    return $hash;
@@ -451,30 +461,6 @@ sub calc_size {
    }
 
 
-# create and element, fill in the missing bits
-# from the dictionary and set its value
-#sub create_element {
-#
-#   ($gr, $el, $val) = @_;
-#
-#   # create the new element
-#   my $n = DICOM::Element->new();
-#
-#   # set the group and element ids
-#   $n->{'group'} = $gr;
-#   $n->{'element'} = $el;
-#
-#   # get the element type and name from the data dictionary
-#   ($n->{'code'}, $n->{'name'}) = @{$dict{$gr}{$el}};
-#
-#   # set the offset to zero (we dont use it anyhow)
-#   $n->{'offset'} = 0;
-#
-#   # set the value
-#   $n->setValue($val);
-#
-#   return $n;
-#   }
 
 
 sub do_cmd {
@@ -499,7 +485,7 @@ B<mnc2dcm> - simple MINC to Dicom converter
 
 =head1 SYNOPSIS
 
-B<mnc2dcm> [options] in.mnc out_base
+B<mnc2dcm> [options] in.mnc outdir
 
 mnc2dcm should work to convert 3D MINC volumes to Dicom "format". By
 Dicom format I mean as much to spec as possible. Mind you this in
@@ -516,7 +502,9 @@ of mnc2dcm has been tested).
 
 =head1 DESCRIPTION
 
-B<mnc2dcm> is a bit of a hack really though as all it does is call ...
+B<mnc2dcm> was wrtten to get MINC data back into DICOM RIS/PACS systems in
+hospitals and the likes. Note that the DICOM creation is by no means complete 
+and a lot of DICOM elements are faked in the process. (eg: operator name).
 
  eg:
     $ mnc2dcm <in.mnc> <outdir>
@@ -533,7 +521,7 @@ you can still email and you might just get lucky, I might be having a good day.
 
 =item B<-v>, B<--verbose>
 
-Be noisy when doing things (most importantly this will echo the resulting script to the terminal)
+Be noisy when doing things
 
 =item B<--version>
 

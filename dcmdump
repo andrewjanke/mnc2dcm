@@ -19,8 +19,6 @@ use File::Basename;
 use Cwd;
 
 use DICOM;
-use DICOM::Fields;
-use DICOM::Element;
 
 # until I get organised and do this properly
 my $PACKAGE = &basename($0);
@@ -30,16 +28,12 @@ my $PACKAGE_BUGREPORT = '"Andrew Janke" <a.janke@gmail.com>';
 my($me, %opt, @command, $script);
 
 $me = &basename($0);
-%opt = (verbose => 0,
-        fake => 0,
-        man => 0,
-        help => 0,
-        move => 0,
-        );
-
-# Get the history string
-chomp($history = `date`);
-$history .= '>>>> ' . join(' ', $me, @ARGV) . "\n";
+%opt = (
+   verbose => 0,
+   fake => 0,
+   man => 0,
+   help => 0,
+   );
 
 # Check arguments
 &GetOptions(
@@ -78,210 +72,16 @@ foreach $f (@ARGV){
 # create the DICOM object
 my $d = DICOM->new();
 
-print "Reading $#infiles Images:";
+print "Reading $#infiles Images\n";
 foreach $infile (@infiles){
-
-   # fill the DICOM object
+   print "---- $infile ----\n";
    $d->fill($infile);
-
-   #print "CONTENTS ($infile)\n";
    $d->printContents();
-
-   # Series, Acquisition, Image IDS
-   $StudyID = $d->value('0020', '0010');
-   $SeriesNumber = $d->value('0020', '0011');
-   $AcquisitionNumber = $d->value('0020', '0012');
-   $ImageNumber = $d->value('0020', '0013');
-
-   # clean up numbers
-   $StudyID =~ s/\ //g;
-   $SeriesNumber *= 1;
-   $AcquisitionNumber *= 1;
-   $ImageNumber *= 1;
-
-   $db{$StudyID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
-
-  # print "[$infile:$StudyID] S:$SeriesNumber A:$AcquisitionNumber I:$ImageNumber\n";
-
-   # times
-   $StudyDate = $d->value('0008', '0020');
-   $SeriesDate = $d->value('0008', '0021');
-   $SeriesTime = $d->value('0008', '0031');
-   $AcquisitionTime = $d->value('0008', '0032');
-   $ImageTime = $d->value('0008', '0033');
-
-  # print "[$infile:$StudyID] $StudyDate $SeriesDate $SeriesTime $AcquisitionTime $ImageTime\n";
-
-   $StudyDate{$StudyID} = $StudyDate;
-   $SeriesDate{"$StudyID:$SeriesNumber"} = $SeriesDate;
-
-   if(defined($SeriesTime{"$StudyID:$SeriesNumber"}) &&
-      $SeriesTime{"$StudyID:$SeriesNumber"} != $SeriesTime){
-      print "ERROR! Series Time does not match($infile)";
-      #exit(1);
-      }
-   $SeriesTime{"$StudyID:$SeriesNumber"} = $SeriesTime;
-   $AcquisitionTime{"$StudyID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
-   $ImageTime{"$StudyID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
-
-   # Sequence, Protocol Name
-   $SequenceName = $d->value('0018', '0024');
-   $ProtocolName = $d->value('0018', '1030');
-   $SequenceName =~ s/\ $//g;
-   $ProtocolName =~ s/\ $//g;
-
-   $SequenceName{"$StudyID:$SeriesNumber"} = $SequenceName;
-   $ProtocolName{"$StudyID:$SeriesNumber"} = $ProtocolName;
-  # print "[$infile:$StudyID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - $SequenceName - $ProtocolName\n";
-
-   print '.';
-   }
-print "Done\n";
-
-
-#(0008, 0020) DA      8: StudyDate                         = 20090218
-#(0008, 0021) DA      8: SeriesDate                        = 20090219
-#(0008, 0022) DA      8: AcquisitionDate                   = 20090219
-#(0008, 0023) DA      8: ImageDate                         = 20090219
-
-#(0008, 0030) TM     14: StudyTime                         = 142540.687000
-#(0008, 0031) TM     14: SeriesTime                        = 134047.437000
-#(0008, 0032) TM     14: AcquisitionTime                   = 134110.150000
-#(0008, 0033) TM     14: ImageTime                         = 134111.921000
-
-
-#(0020, 0010) SH      8: StudyID                           = 5150440
-#(0020, 0011) IS      2: SeriesNumber                      = 30
-#(0020, 0012) IS      2: AcquisitionNumber                 = 9
-#(0020, 0013) IS      2: ImageNumber                       = 9
-
-
-# print out the database
-
-foreach $std (sort {$a <=> $b} (keys(%db))){
-
-   foreach $ser (sort {$a <=> $b} (keys(%{$db{$std}}))){
-
-      print "[$std][" . sprintf("%03d", $ser) .
-            '][' . $SeriesDate{"$std:$ser"} .
-            '][' . $SeriesTime{"$std:$ser"} .
-            '] '. $ProtocolName{"$std:$ser"} .
-            ' ';
-
-      print "   ";
-      foreach $acq (sort {$a <=> $b} (keys(%{$db{$std}{$ser}}))){
-
-         #print "   Acq[" . $AcquisitionTime{"$StudyID:$s:$a"} . "]: $a  (";
-         print "$acq ";
-
-         @imgs = (sort {$a <=> $b} (keys(%{$db{$std}{$ser}{$acq}})));
-
-         print '(' . join(' ', @imgs) . ') ' if($#imgs > 0);
-
-         if($opt{'move'}){
-            foreach $img (@imgs){
-
-               $infile = $db{$std}{$ser}{$acq}{$img};
-
-               $protocol = $ProtocolName{"$std:$ser"};
-               $protocol =~ s/\//\-/g;
-               $protocol =~ s/\ /\-/g;
-               $outdir = "$std/" . sprintf("%04d", $ser) . "_$protocol";
-               $outfile = sprintf("%04d-%04d.dcm", $acq, $img);
-
-            #   print "$infile => $outdir/$outfile\n";
-
-               &do_cmd('mkdir', '-p', $outdir);
-               &do_cmd('mv', '-i', $infile, "$outdir/$outfile");
-               }
-            }
-         }
-      print "\n";
-      }
    }
 
-
-sub do_cmd {
-   print STDOUT "@_\n" if $opt{verbose};
-   if(!$opt{fake}){
-      system(@_) == 0 or die;
-      }
-   }
 
 sub print_version_info {
    print STDOUT "\n$PACKAGE version $VERSION\n".
                 "Comments to $PACKAGE_BUGREPORT\n\n";
    exit;
    }
-
-
-__END__
-
-=head1 NAME
-
-B<mnc2dcm> - simple MINC to Dicom converter
-
-=head1 SYNOPSIS
-
-B<mnc2dcm> [options] in.mnc out_base
-
-mnc2dcm should work to convert 3D MINC volumes to Dicom "format". By
-Dicom format I mean as much to spec as possible. Mind you this in
-NO WAY means that you will be able to re-import these images into some
-scanner interface as most of these have their own addittions to Dicom
-that are not always that compatible with each other. So yes your images
-might be importable into such scanner interfaces but also might not.
-
-They should howver be easily readable with Dicom viewers such as Osirix,
-Sante Dicom Viewer and ImageJ (three of the viewers on which the output
-of mnc2dcm has been tested).
-
-   $ mnc2dcm <in.mnc> <outdir>
-
-=head1 DESCRIPTION
-
-B<mnc2dcm> is a bit of a hack really though as all it does is call ...
-
- eg:
-    $ mnc2dcm <in.mnc> <outdir>
-
-Problems or comments should not be sent to: a.janke@gmail.com he really
-is not all that interested in maintaining things that pertain to DICOM
-as it seems to be a constantly moving target. But hey you can
-still email and you might just get lucky, he might be having a good day.
-
-=head1 OPTIONS
-
-=over 4
-
-=item B<-v>, B<--verbose>
-
-Be noisy when doing things (most importantly this will echo the resulting script to the terminal)
-
-=item B<--version>
-
-Print version number and exit
-
-=item B<-h>, B<--help>
-
-Dump some quick help output
-
-=item B<--man>
-
-Dump a man page
-
-=item B<-f>, B<--fake>
-
-Do a dry run. This is usually only useful if combined with --verbose so that you can see what is going on.
-
-=back
-
-=head1 SEE ALSO
-
-dconvert(1)
-
-=head1 AUTHOR
-
-Andrew Janke - a.janke@gmail.com
-
-=cut
