@@ -22,6 +22,10 @@ use Cwd;
 use DICOM;
 use DICOM::Element;
 
+# UID prefix - (x)medcon uses 777.777.0.0.0
+# see: http://xmedcon.sourceforge.net/Docs/Dicom
+my $uid_prefix = '777.776.0.0.0';
+
 # until I get organised and do this properly
 my $PACKAGE = &basename($0);
 my $VERSION = '1.0.0';
@@ -58,11 +62,6 @@ pod2usage(-verbose => 0) && exit if ($#ARGV != 1);
 # get arguments
 $infile = $ARGV[0];
 $outdir = $ARGV[1];
-
-
-$hash = &sdbm_hash("this is some text");
-print "HASH: $hash\n";
-exit;
 
 # set up tmpdir
 $opt{tmpdir} = &tempdir( "$me-XXXXXXXX", TMPDIR => 1, CLEANUP => 1 );
@@ -101,6 +100,7 @@ my $d = DICOM->new();
 
 
 # Dicom things (0x0002 group)
+
 # MetaElementGroupLength
 $d->create_element(0x0002, 0x0000, 0);
 
@@ -112,7 +112,7 @@ $d->{0x0002}{0x0001}->{'value'} = pack('cc', 0x00, 0x01);
 $d->create_element(0x0002, 0x0002, '1.2.840.10008.5.1.4.1.1.20');
 
 # MediaStorageSOPInstanceUID
-$d->create_element(0x0002, 0x0003, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+#$d->create_element(0x0002, 0x0003, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
 
 # TransferSyntaxUID - explicit VR little
 $d->create_element(0x0002, 0x0010, '1.2.840.10008.1.2.1');
@@ -133,6 +133,7 @@ print "+++ Set 0002,0000 (group size) to $size\n" if $opt{'verbose'};
 
 
 # (0x0008 group)
+
 # SpecificCharacterSet
 $d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 
@@ -140,38 +141,39 @@ $d->create_element(0x0008, 0x0005, 'ISO_IR 100');
 $d->create_element(0x0008, 0x0008, 'DERIVED\SECONDARY');
 
 # InstanceCreationDate
-$d->create_element(0x0008, 0x0012, '20090303');
-
-# InstanceCreationTime
 my($seconds, $milliseconds, @t, $dcmtime);
 ($seconds, $milliseconds) = gettimeofday();
-@t = localtime($seconds);
-$dcmtime = sprintf("%02d%02d%02d.%06d", $t[2], $t[1], $t[0], $milliseconds);
+@tm = localtime($seconds);
+$tm[5] += 1900;
+$dcmdate = sprintf("%04d%02d%02d", $tm[5], $tm[4], $tm[3]);
+$d->create_element(0x0008, 0x0012, $dcmdate);
+
+# InstanceCreationTime
+$dcmtime = sprintf("%02d%02d%02d.%06d", $tm[2], $tm[1], $tm[0], $milliseconds);
 $d->create_element(0x0008, 0x0013, $dcmtime);
 
 # InstanceCreatorUID
-$d->create_element(0x0008, 0x0014, '777.777.0.0.0');
+$d->create_element(0x0008, 0x0014, $uid_prefix);
 
 # SOPClassUID
 $d->create_element(0x0008, 0x0016, '1.2.840.10008.5.1.4.1.1.20');
 
-# SOPInstanceUID
-$d->create_element(0x0008, 0x0018, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
-
 # StudyDate
-$d->create_element(0x0008, 0x0020, '20081210');
+chomp($study_start_date = 
+   `mincinfo -attvalue study:start_date -error_string "$dcmdate" $infile`);
+$d->create_element(0x0008, 0x0020, $study_start_date);
 
 # SeriesDate
-$d->create_element(0x0008, 0x0021, '20081210');
+$d->create_element(0x0008, 0x0021, $study_start_date);
 
 # AcquisitionDate
-$d->create_element(0x0008, 0x0022, '20081210');
+$d->create_element(0x0008, 0x0022, $study_start_date);
 
 # ImageDate
-$d->create_element(0x0008, 0x0023, '20081210');
+$d->create_element(0x0008, 0x0023, $study_start_date);
 
 # AcquisitionDateTime
-$d->create_element(0x0008, 0x002a, "20081210" . $seconds);
+$d->create_element(0x0008, 0x002a, "$study_start_date.$seconds");
 
 # StudyTime
 $d->create_element(0x0008, 0x0030, $dcmtime);
@@ -186,19 +188,19 @@ $d->create_element(0x0008, 0x0032, $dcmtime);
 $d->create_element(0x0008, 0x0033, $dcmtime);
 
 # AccessionNumber
-$d->create_element(0x0008, 0x0050, 1234);
+#$d->create_element(0x0008, 0x0050, 1234);
 
 # Modality
 $d->create_element(0x0008, 0x0060, 'MR');
 
 # Manufacturer
-$d->create_element(0x0008, 0x0070, 'minc');
+$d->create_element(0x0008, 0x0070, 'minc2');
 
 # InstitutionName
 $d->create_element(0x0008, 0x0080, 'Unknown');
 
 # ReferringPhysicianName
-$d->create_element(0x0008, 0x0090, '');
+$d->create_element(0x0008, 0x0090, 'Unknown');
 
 # StudyDescription
 $d->create_element(0x0008, 0x1030, $history);
@@ -215,19 +217,31 @@ $d->create_element(0x0008, 0x2111, 'mnc2dcm - Andrew Janke <a.janke@gmail.com>')
 
 # (0x0010 group)
 # PatientsName
-$d->create_element(0x0010, 0x0010, "JOHN^DOE");
+chomp($patient_name = 
+   `mincinfo -attvalue patient:full_name -error_string "Unknown" $infile`);
+$d->create_element(0x0010, 0x0010, uc($patient_name));
 
 # PatientID
-$d->create_element(0x0010, 0x0020, "PatientID");
+chomp($patient_identification = 
+   `mincinfo -attvalue patient:identification -error_string "Unknown" $infile`);
+$d->create_element(0x0010, 0x0020, $patient_identification);
 
 # PatientsBirthDate
-$d->create_element(0x0010, 0x0030, "19990101");
+chomp($patient_birthdate = 
+   `mincinfo -attvalue patient:birthdate -error_string "00000000" $infile`);
+$d->create_element(0x0010, 0x0030, $patient_birthdate);
 
 # PatientsSex
-$d->create_element(0x0010, 0x0040, "M");
+chomp($patient_sex = 
+   `mincinfo -attvalue patient:sex -error_string "" $infile`);
+$patient_sex = 'F' if ($patient_sex =~ m/female/);
+$patient_sex = 'M' if ($patient_sex =~ m/male/);
+$d->create_element(0x0010, 0x0040, $patient_sex);
 
 # PatientsAge
-$d->create_element(0x0010, 0x1010, "099Y");
+chomp($patient_age = 
+   `mincinfo -attvalue patient:age -error_string "0" $infile`);
+$d->create_element(0x0010, 0x1010, $patient_age);
 
 
 # (0x0018 group)
@@ -252,16 +266,22 @@ $d->create_element(0x0018, 0x0088, 0);
 $d->create_element(0x0018, 0x1030, "MINC");
 
 # PatientPosition
-$d->create_element(0x0018, 0x5100, "HFS");
+chomp($patient_position = 
+   `mincinfo -attvalue patient:position -error_string "HFS" $infile`);
+$d->create_element(0x0018, 0x5100, $patient_position);
 
 
 # (0x0020 group)
 
 # StudyInstanceUID
-$d->create_element(0x0020, 0x000d, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+$uid_A = &sdbm_hash($dcmtime);
+$uid_B = &sdbm_hash($patient_name .  $patient_identification .
+                    $dcmdate . $dcmtime);
+$uid_C = &sdbm_hash($infile);
+$d->create_element(0x0020, 0x000d, "$uid_prefix.$uid_A.$uid_B");
 
 # SeriesInstanceUID
-$d->create_element(0x0020, 0x000e, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
+$d->create_element(0x0020, 0x000e, "$uid_prefix.$uid_A.$uid_B.$uid_C");
 
 # Image Comment
 $d->create_element(0x0020, 0x4000, "Created by $me ($VERSION)");
@@ -303,6 +323,7 @@ $d->create_element(0x0020, 0x1002, $zsize);
 
 
 # (0x0028 group)
+
 # SamplesPerPixel
 $d->create_element(0x0028, 0x0002, 1);
 
@@ -325,21 +346,24 @@ $d->create_element(0x0028, 0x0101, 16);
 $d->create_element(0x0028, 0x0102, 15);
 
 # PixelRepresentation
-$d->create_element(0x0028, 0x0103, 0);
+$d->create_element(0x0028, 0x0103, 1);
 
+# these two set the range strange for some unknown reason
 # SmallestImagePixelValue - real_range[0]
-$d->create_element(0x0028, 0x0106, 0);
+#$d->create_element(0x0028, 0x0106, 0);
 
 # LargestImagePixelValue - real_range[1]
-$d->create_element(0x0028, 0x0107, 65535);
-
-
+#$d->create_element(0x0028, 0x0107, 65535);
 
 
 # first create the required elements (setting to null and/or 0)
+# for the elements that change per slice
+
+# SOPInstanceUID
+$d->create_element(0x0008, 0x0018, '0.0.0.0.0.0.0.0.0');
+
 # InstanceNumber
 $d->create_element(0x0020, 0x0013, 0);
-
 
 # ImagePositionPatient
 # The x, y, and z coordinates of the upper
@@ -386,6 +410,10 @@ foreach $s (0..($zsize-1)){
    $d->{0x0008}{0x0013}->setValue($dcmtime);
    $d->{0x0008}{0x0033}->setValue($dcmtime);
    
+   # set SOPInstanceUID
+   $uid_D = &sdbm_hash($outfile);
+   $d->{0x0008}{0x0018}->setValue("$uid_prefix.$uid_A.$uid_B.$uid_C.$uid_D");
+
    # set the image number
    $d->{0x0020}{0x0013}->setValue($s+1);
 
@@ -413,34 +441,30 @@ foreach $s (0..($zsize-1)){
    $d->write($outfile);
    }
 
-print "CONTENTS: \n";
-# $d->printContents();
 
 # sub sdbm - hashing function from here:
 #   http://www.cse.yorku.ca/~oz/hash.html
 sub sdbm_hash {
-   #use integer; 
+   use integer; 
    my ($input) = @_;
-
-   my ($c, $hash);
-
-   print "$input - ($#input)\n";
+   my $hash_txt;
    
-   $hash = 0;
-   $p_hash = 0;
-   foreach $c (0..length($input)){
-
-      $hash = $p_hash * 65599 + ord(substr($input, $c, 1));
-      
-      print "HASH: $hash\n";
-      
-      #print "HASH[$c]: $hash FRED: " . ord(substr($input, $c, 1)) . " <<16 " . ($hash >> 16) . "\n";
-      #$hash = ord(substr($input, $c, 1)) + ($hash << 6) + ($hash << 16) - $hash;
-      
-      $p_hash = $hash;
-      }
-
-   return $hash;
+   {
+      # generate the hash in uint32
+	  use integer;
+      my ($c, $hash);
+   
+      $hash = 0;
+      foreach $c (0..length($input)-1){
+		 $hash = ord(substr($input, $c, 1)) + ($hash << 6) + ($hash << 16) - $hash;
+         }
+	  
+	  # "cast" to unsigned int (from long)
+	  # to maintain consistency with (x)medcon
+	  $hash_txt = sprintf("%lu", $hash & 0xFFFFFFFF);
+	  }
+   
+   return $hash_txt;
    }
 
 
