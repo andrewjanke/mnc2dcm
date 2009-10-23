@@ -30,27 +30,32 @@ my $PACKAGE_BUGREPORT = '"Andrew Janke" <a.janke@gmail.com>';
 my($me, %opt, $infile, @infiles);
 
 $me = &basename($0);
-%opt = (verbose => 0,
-        fake => 0,
-        man => 0,
-        help => 0,
-        move => 0,
-        copy => 0,
-        by_id => 0,
-        outdir => '',
-        );
+%opt = (
+   verbose => 0,
+   clobber => 0,
+   fake => 0,
+   man => 0,
+   help => 0,
+   move => 0,
+   copy => 0,
+   by_id => 0,
+   rename_log => undef,
+   outdir => '',
+   );
 
 # Check arguments
 &GetOptions(
    'help|?' => \$opt{'help'},
    'man' => \$opt{'man'},
    'v|verbose' => \$opt{'verbose'},
+   'c|clobber' => \$opt{'clobber'},
    'version' => sub { &print_version_info },
    'f|fake' => \$opt{'fake'},
    'move' => \$opt{'move'},
    'copy' => \$opt{'copy'},
    'by_id' => \$opt{'by_id'},
    'outdir=s' => \$opt{'outdir'},
+   'rename_log=s' => \$opt{'rename_log'},
    ) or pod2usage(-verbose => 1) && exit;
    
 # handle -man, -help or missing args
@@ -83,6 +88,12 @@ foreach (@ARGV){
 if($opt{'outdir'} eq ''){
    $opt{'outdir'} = &getcwd;
    }
+
+# check for logfile
+if(defined($opt{'rename_log'}) && !$opt{'clobber'} && -e $opt{'rename_log'}){
+   die "$me: $opt{'rename_log'} exists!, use -clobber to overwrite\n\n";
+   }
+
 
 my(%db, %StudyDate, %SeriesDate, %SeriesTime, %AcquisitionTime,
    %ImageTime, %SequenceName, %ProtocolName);
@@ -167,6 +178,10 @@ foreach $infile (@infiles){
    }
 print "Done\n";
 
+# set up rename logfile
+if(defined($opt{'rename_log'})){
+   open(LOG, ">$opt{'rename_log'}");
+   }
 
 my ($id, $ser, $acq, $img, @imgs);
 
@@ -217,6 +232,9 @@ foreach $id (sort keys(%db)){
                
                # print "$infile => $outdir/$outfile\n" if $opt{'verbose'};
                
+               # log
+               print LOG "$infile -> $outfile\n" if defined($opt{'rename_log'});
+               
                # make output dir
                &do_cmd('mkdir', '-p', $outdir);
                
@@ -239,6 +257,8 @@ foreach $id (sort keys(%db)){
       print "\n";
       }
    }
+
+close(LOG) if defined($opt{'rename_log'});
 
 
 sub do_cmd { 
@@ -319,6 +339,10 @@ hand...
 
 Be noisy(er) when doing things
 
+=item B<-c>, B<--clobber>
+
+Overwrite any existing logfile
+
 =item B<--version>
 
 Print version number and exit
@@ -353,6 +377,10 @@ Name the resulting top level directory by the PatientID instead of by name
 Place the resulting files (either copied or moved) into this directory, note
 that if the directory does not exist it will be made. By default the current
 working directory is used
+
+=item B<--rename_log>
+
+Keep a logfile of filenames as they are moved or copied
 
 =back
 
