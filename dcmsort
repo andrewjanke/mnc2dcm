@@ -114,7 +114,13 @@ foreach $infile (@infiles){
    # hunt for a patient name or ID
    my $PatientName = $d->value('0010', '0010');
    my $PatientID = $d->value('0010', '0020');
-      
+   
+   # if no name or ID, probably not an image (likely DICOMDIR)
+   if(length($PatientName) == 0 && length($PatientID) == 0){
+      warn "\n  +++ Skipping $infile - probably not a DICOM image\n";
+      next;
+      }
+   
    # Series, Acquisition, Image IDS
    my $StudyID = $d->value('0020', '0010');
    my $SeriesNumber = $d->value('0020', '0011');
