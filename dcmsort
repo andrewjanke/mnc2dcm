@@ -114,24 +114,26 @@ foreach $infile (@infiles){
    # hunt for a patient name or ID
    my $PatientName = $d->value('0010', '0010');
    my $PatientID = $d->value('0010', '0020');
-   
+  
    # if no name or ID, probably not an image (likely DICOMDIR)
    if(length($PatientName) == 0 && length($PatientID) == 0){
       warn "\n  +++ Skipping $infile - probably not a DICOM image\n";
       next;
       }
-   
+
+   $PatientID =~ s/\0//;  
+   $PatientName =~ s/\0//;  
+ 
    # Series, Acquisition, Image IDS
    my $StudyID = $d->value('0020', '0010');
-   my $SeriesNumber = $d->value('0020', '0011');
-   my $AcquisitionNumber = $d->value('0020', '0012');
-   my $ImageNumber = $d->value('0020', '0013');
-   
+   my $SeriesNumber = &make_numeric($d->value('0020', '0011'));
+   my $AcquisitionNumber = &make_numeric($d->value('0020', '0012'));
+   my $ImageNumber = &make_numeric($d->value('0020', '0013'));
+  
+   # print "SI: $StudyID  SN: $SeriesNumber  AN: $AcquisitionNumber  IN: $ImageNumber\n";
+
    # clean up numbers
-   $StudyID =~ s/\ //g;
-   $SeriesNumber *= 1;
-   $AcquisitionNumber *= 1;
-   $ImageNumber *= 1;
+   $StudyID =~ s/(\ |\0)//g;
    
    # times
    my $StudyDate = $d->value('0008', '0020');
@@ -140,13 +142,16 @@ foreach $infile (@infiles){
    my $SeriesTime = $d->value('0008', '0031');
    my $AcquisitionTime = $d->value('0008', '0032');
    my $ImageTime = $d->value('0008', '0033');
+
+   $StudyTime =~ s/\ //g;
+   $SeriesTime =~ s/\ //g;
    
    # Sequence, Protocol Name
    my $SequenceName = $d->value('0018', '0024');
    my $ProtocolName = $d->value('0018', '1030');
-   $SequenceName =~ s/\ $//g;
-   $ProtocolName =~ s/\ $//g;
-   
+   $SequenceName =~ s/(\ $|\0)//g;
+   $ProtocolName =~ s/(\ $|\0)//g;
+
    # figure out ID and record info
    if($opt{'by_id'}){
       $ID = join('-', $PatientID, $StudyDate, $StudyTime);
@@ -159,26 +164,30 @@ foreach $infile (@infiles){
    $ID =~ s/\ //g;
    $ID = lc($ID);
    
-   print "[$ID] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - " .
+   print "[$ID][$StudyDate:$StudyTime] [$SeriesNumber][$AcquisitionNumber][$ImageNumber] - " .
       "$SequenceName - $ProtocolName  -- $infile\n" if $opt{'verbose'};
+
+   # generate hashkey
+   my($hashkey) = "$ID.$StudyDate.$StudyTime";
+   $hashkey =~ s/\.\d{6}$//;
+ 
+   # add file to the db
+   $db{$hashkey}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
    
-   # enter the filename
-   $db{$ID}{$SeriesNumber}{$AcquisitionNumber}{$ImageNumber} = $infile;
-   
-   $StudyDate{$ID} = $StudyDate;
-   $SeriesDate{"$ID:$SeriesNumber"} = $SeriesDate;
-   
-   if(defined($SeriesTime{"$ID:$SeriesNumber"}) && 
-      $SeriesTime{"$ID:$SeriesNumber"} != $SeriesTime){
-      print "ERROR! Series Time does not match($infile)";
+   # sanity check 
+   if(defined($SeriesTime{"$hashkey:$SeriesNumber"}) && 
+      $SeriesTime{"$hashkey:$SeriesNumber"} != $SeriesTime){
+      print "\n +++ ERROR! SeriesTime does not match ($infile)\n";
       # exit(1);
       }
-   $SeriesTime{"$ID:$SeriesNumber"} = $SeriesTime;
-   $AcquisitionTime{"$ID:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
-   $ImageTime{"$ID:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
    
-   $SequenceName{"$ID:$SeriesNumber"} = $SequenceName;
-   $ProtocolName{"$ID:$SeriesNumber"} = $ProtocolName;
+   $SeriesDate{"$hashkey:$SeriesNumber"} = $SeriesDate;
+   $SeriesTime{"$hashkey:$SeriesNumber"} = $SeriesTime;
+   $ProtocolName{"$hashkey:$SeriesNumber"} = $ProtocolName;
+   
+   #$AcquisitionTime{"$hashkey:$SeriesNumber:$AcquisitionNumber"} = $AcquisitionTime;
+   #$ImageTime{"$hashkey:$SeriesNumber:$AcquisitionNumber:$ImageNumber"} = $ImageTime;
+   #$SequenceName{"$hashkey:$SeriesNumber"} = $SequenceName;
    
    print '.';
    }
@@ -236,8 +245,6 @@ foreach $id (sort keys(%db)){
                
                $outfile = $outdir . '/' . sprintf("%04d-%04d.dcm", $acq, $img);
                
-               # print "$infile => $outdir/$outfile\n" if $opt{'verbose'};
-               
                # log
                print LOG "$infile -> $outfile\n" if defined($opt{'rename_log'});
                
@@ -278,6 +285,19 @@ sub print_version_info {
    print STDOUT "\n$PACKAGE version $VERSION\n".
                 "Comments to $PACKAGE_BUGREPORT\n\n";
    exit;
+   }
+
+# fix up DICOM messings with numbers
+sub make_numeric {
+   my($in) = shift;
+
+   # remove null character
+   $in =~ s/\0//;
+
+   # force to numeric
+   $in *= 1;
+ 
+   return $in;
    }
 
 
