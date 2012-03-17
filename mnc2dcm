@@ -22,7 +22,8 @@ use Cwd;
 use DICOM;
 use DICOM::Element;
 
-# UID prefix - (x)medcon uses 777.777.0.0.0
+# UID prefix -- you should change this
+# (x)medcon uses 777.777.0.0.0
 # see: http://xmedcon.sourceforge.net/Docs/Dicom
 my $uid_prefix = '777.776.0.0.0';
 
@@ -110,9 +111,6 @@ $d->{0x0002}{0x0001}->{'value'} = pack('cc', 0x00, 0x01);
 
 # MediaStorageSOPClassUID
 $d->create_element(0x0002, 0x0002, '1.2.840.10008.5.1.4.1.1.20');
-
-# MediaStorageSOPInstanceUID
-#$d->create_element(0x0002, 0x0003, '777.777.0.0.0.1236118155.1523023229.3719989242.1124203223');
 
 # TransferSyntaxUID - explicit VR little
 $d->create_element(0x0002, 0x0010, '1.2.840.10008.1.2.1');
